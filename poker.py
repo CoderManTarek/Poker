@@ -38,6 +38,7 @@ class Table:
     self.action = -1
     self.pot = 0
     self.active_players = []
+    self.community_cards = []
 
     if players == None:
       self.players = []
@@ -55,8 +56,12 @@ class Table:
       self.deck.cards.remove(self.deck.cards[0])
       self.deck.cards.remove(self.deck.cards[len(self.players)-1])
     
-    # preflop
+    # add condition to see if everyone folded ex: if len(active_players > 1)
     self.preflop()
+    self.flop()
+    self.turn()
+    self.river()
+    #self.showdown()
 
   def print_table(self):
     print("Pot: ${}".format(self.pot))
@@ -64,13 +69,7 @@ class Table:
       if(player.status != "out"):
         print("Player {} [Starting Stack: ${}]: {}{} {}{}".format(player.player_id, player.stack, player.hand.card1.value, player.hand.card1.suit[0], player.hand.card2.value, player.hand.card2.suit[0]))
 
-  def preflop(self):
-    self.print_table()
-
-    # add all players that are dealt in to the active players list
-    for player in self.players:
-      player.status = "starting round"
-      self.active_players.append(player)
+  def decision(self):
     
     # circle action around and track decisions, until stop conditions are met
     while(True):
@@ -84,9 +83,11 @@ class Table:
             stop = False
         
         if(stop == True):
-          print("Preflop betting round is over")
+          print("betting round is over")
+          for plyr in self.active_players:
+            if(plyr.status == "in (money not owed)"):
+              plyr.status = "starting round"
           return
-
 
         if(player.status == "out"):
           continue
@@ -111,7 +112,64 @@ class Table:
           self.pot += amount
         if(choice == "check"):
           pass
-            
+
+  def reset_player_round_amounts(self):
+    for player in self.active_players:
+      player.money_out = 0
+      player.owed = 0
+
+  def print_community_cards(self):
+    for i in self.community_cards:
+      print("{}{}".format(i.value, i.suit[0]))
+
+  def preflop(self):
+    # add all players that are dealt in to the active players list
+    for player in self.players:
+      player.status = "starting round"
+      self.active_players.append(player)
+    #self.print_table()
+    self.decision()
+  
+  def flop(self):
+    self.reset_player_round_amounts()
+
+    # deal 3 community cards
+    self.community_cards.append(self.deck.cards[0])
+    self.community_cards.append(self.deck.cards[1])
+    self.community_cards.append(self.deck.cards[2])
+    self.deck.cards.remove(self.deck.cards[2])
+    self.deck.cards.remove(self.deck.cards[1])
+    self.deck.cards.remove(self.deck.cards[0])
+
+    self.print_community_cards()
+
+    self.decision()
+
+  def turn(self):
+    self.reset_player_round_amounts()
+
+    self.community_cards.append(self.deck.cards[0])
+    self.deck.cards.remove(self.deck.cards[0])
+
+    self.print_community_cards()
+
+
+    #self.print_table()
+    self.decision()
+  
+  def river(self):
+    self.reset_player_round_amounts()
+    #self.print_table()
+
+    self.community_cards.append(self.deck.cards[0])
+    self.deck.cards.remove(self.deck.cards[0])
+
+    self.print_community_cards()
+
+    self.decision()
+  
+  def showdown(self):
+    pass
           
   
 
@@ -157,6 +215,7 @@ class Player:
   
   def check(self):
     print("Player {} checks".format(self.player_id))
+    self.status = "in (money not owed)"
     return 0
   
   def fold(self):
@@ -199,7 +258,6 @@ class Player:
   def __str__(self):
     return "Player {}".format(self.player_id)
     
-
 
 def main():
   players = []
