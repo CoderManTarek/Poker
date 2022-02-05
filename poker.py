@@ -37,6 +37,7 @@ class Table:
     self.deck = deck
     self.action = -1
     self.pot = 0
+    self.active_players = []
 
     if players == None:
       self.players = []
@@ -59,37 +60,59 @@ class Table:
 
   def print_table(self):
     print("Pot: ${}".format(self.pot))
-    for player in self.players:
-      print("Player {} [Starting Stack: ${}]: {}{} {}{}".format(player.player_id, player.stack, player.hand.card1.value, player.hand.card1.suit[0], player.hand.card2.value, player.hand.card2.suit[0]))
+    for player in self.active_players:
+      if(player.status != "out"):
+        print("Player {} [Starting Stack: ${}]: {}{} {}{}".format(player.player_id, player.stack, player.hand.card1.value, player.hand.card1.suit[0], player.hand.card2.value, player.hand.card2.suit[0]))
 
   def preflop(self):
-    #set action at utg+1
-    x = 1
-    self.action = x
-    #check to see if someone has the action and we need to wait
-    while True:
-      active_action = False
-      for player in self.players:
-        active_action = False
-        if(player.action == True):
-          active_action = True
-          break;
+    self.print_table()
 
-      for player in self.players:
-        if(active_action == False):  
-          if(player.player_id == self.action and player.status != "out"):
-            x = 0
-            self.print_table()
-            player.action = True
-            x = player.listen_for_action()
-            self.pot += x
-            #iterate action,
-            self.action += 1
-            if(self.action == 10):
-              self.action = self.action%9
-            break;
-      
+    # add all players that are dealt in to the active players list
+    for player in self.players:
+      player.status = "starting round"
+      self.active_players.append(player)
     
+    # circle action around and track decisions, until stop conditions are met
+    while(True):
+      for player in self.active_players:
+        # stop condition
+        stop = True
+        for plyr in self.active_players:
+          if(plyr.status == "starting round"):
+            stop = False
+          if(plyr.status == "in (money owed)"):
+            stop = False
+        
+        if(stop == True):
+          print("Preflop betting round is over")
+          return
+
+
+        if(player.status == "out"):
+          continue
+        self.print_table()
+        
+        # make a decision 
+        choice, amount = player.handle_action()
+
+        # change their status to folded
+        if(choice == "fold"):
+          player.status = "out"
+        if(choice == "bet"):
+          self.pot += amount
+          # change players amount owed
+          for plyr in self.active_players:
+            if(plyr == player):
+              continue
+            if(plyr.status != "out"):
+              plyr.owed = player.money_out
+              plyr.status = "in (money owed)"
+        if(choice == "call"):
+          self.pot += amount
+        if(choice == "check"):
+          pass
+            
+          
   
 
 # add raise(amount), check(), fold(), rebuy(amount)
@@ -100,38 +123,82 @@ class Player:
     self.seat_number = seat_number
     self.stack = stack
     self.hand = hand
-    self.action = False
-    self.listen_for_action()
-    self.status = "out" # out, in (check possible),to call x, good
+    self.status = "out" # out (folded), starting round, in (money owed), in (money not owed), all in
     self.owed = 0
+    self.money_out = 0
   
-  def listen_for_action(self):
-    if(self.action == True):
+  # check to see if player has action (is it my turn?) if they do have the action, give them the ability to check, bet, fold, call, etc
+  def handle_action(self):
+    # check status
+    if(self.status == "in (money not owed)" or self.status == "starting round" or self.status == "in (money owed)"):
+      # player decision
       choice = input("Player {} has the action: ".format(self.player_id))
       # if player checks
-      if(choice == 'c'):
-        self.check()
+      x = -1
+      if(choice == "call"):
+        return "call",self.call()
+      if(choice[0]=='c'):
+        return "check",self.check()
+      if(choice[0]=='f'):
+        return "fold",self.fold()
+      if(choice[0]=='b'):
+        c, amount = choice.split(' ')
+        self.bet(amount)
+        return "bet",int(amount)
+      else:
         return 0
-      if(choice == 'f'):
-        self.fold()
-        return 0
-      if(choice[0] == 'b'):
-        tmp, amount = choice.split(' ')
-        self.bet(int(amount))
-        return int(amount)
+    # if all in or out (folded), skip player
+    #if(self.status == "all in" or self.status == "out"):
+     
+    #  pass
+    
+    else:
+      return 0
   
   def check(self):
-    self.action = False
-    #self.status = "good"
+    print("Player {} checks".format(self.player_id))
+    return 0
   
   def fold(self):
-    self.action = False
     self.status = "out"
-  
+    print("Player {} folds".format(self.player_id))
+    return 'f'
+
   def bet(self, amount):
+    bet = int(amount)
+    # check if player stack is less than owed plus attempted bet
+    # if (self.stack < self.owed+bet)
+      #  return "[insert faiure]"
+    print("Player {} bets {}".format(self.player_id, amount))
+    #change player stack
+    self.stack -= int(amount)
+    #change player owed
+    self.money_out += bet
+    #change player status
+    if (self.stack == 0):
+      self.status = "all in"
+    else:
+      self.status = "in (money not owed)"
+    return bet
+    
+  def call(self):
+    amount = self.owed - self.money_out
+    #change player stack
     self.stack -= amount
-    self.action = False
-    self.status = "bet {}".format(amount)
+    #change owed
+    self.owed = 0
+    self.money_out += amount
+    #change status
+    print("Player {} calls {}".format(self.player_id, amount))
+    if (self.stack == 0):
+      self.status = "all in"
+    else:
+      self.status = "in (money not owed)"
+    return amount
+  
+  def __str__(self):
+    return "Player {}".format(self.player_id)
+    
 
 
 def main():
