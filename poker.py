@@ -1,6 +1,7 @@
 import random
-#done
+
 class Card:
+  #constructor
   def __init__(self, value, suit):
     self.value = value
     self.suit = suit
@@ -22,7 +23,7 @@ class Deck:
   def print_cards_remaining(self):
     for card in self.cards:
       print("{} {}".format(card.value, card.suit))
-#done
+
 class Hand:
   def __init__(self, card1, card2):
     self.card1 = card1
@@ -170,10 +171,53 @@ class Table:
   
   def showdown(self):
     pass
-          
-  
+    # objective: find the player that has the best hand and give them the pot
 
-# add raise(amount), check(), fold(), rebuy(amount)
+    # steps
+
+    # find the player with the best hand
+    # iterate through all players
+      # assign all of their hand rankings (make separate assign function assign(table.communitycards, player.hand) will return hand ranking)
+      # compare to see who had the highest hand type
+      #  if one player has a clear win (higher hand type than all other players)
+          # give them the pot
+      #   if  two players tie for best hand type
+      #       compare hand values (2-A)
+              # if values are the same
+              #     tie()
+              # else:
+              #     give winner pot
+    #
+    # give the player the pot
+  
+  #input: table.communitycards, player.hand
+  #output: hand rank (royal flush, pair of Aces king kicker, straight to 9, 2s full of threes, ace high flush,)
+  def assign_hand_ranking(self, player):
+    # check for royal flush
+
+    # check for straight flush
+
+    # check for 4 of a kind
+
+    # check for full house
+
+    # check for flush
+
+    # check for straight
+
+    # check for 3 of a kind
+
+    # check for 2 pair
+
+    # check for pair
+
+    # default to high card
+
+    pass
+    #start from top of hand heirarchy, and check in decreasing order for qualifying hands
+
+
+# add rebuy(amount)
 class Player:
   num_of_players = 0
   def __init__(self, player_id, seat_number, stack, hand = None):
@@ -206,7 +250,7 @@ class Player:
       else:
         return 0
     # if all in or out (folded), skip player
-    #if(self.status == "all in" or self.status == "out"):
+    # if(self.status == "all in" or self.status == "out"):
      
     #  pass
     
