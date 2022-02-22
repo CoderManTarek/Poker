@@ -1,10 +1,16 @@
 import random
+from operator import attrgetter
 
 class Card:
   #constructor
-  def __init__(self, value, suit):
+  def __init__(self, value, suit, weight):
     self.value = value
     self.suit = suit
+    self.weight = weight
+
+  def __repr__(self):
+        return '{' + self.value + ', ' + self.suit + ', ' + str(self.weight) + '}'
+
 
 #add shuffle
 class Deck:
@@ -14,7 +20,20 @@ class Deck:
     self.cards = []
     for i in self.values:
       for j in self.suits:
-        card = Card(i, j)
+        # get card weights
+        try:
+          # deal with numerical card values
+          k = int(i)
+        except:
+          #deal with face cards
+          face_card_weights = {
+            'J':11,
+            'Q':12,
+            'K':13,
+            'A':14
+          }
+          k = face_card_weights[i]
+        card = Card(i, j, k)
         self.cards.append(card)
   
   def shuffle(self):
@@ -22,7 +41,7 @@ class Deck:
 
   def print_cards_remaining(self):
     for card in self.cards:
-      print("{} {}".format(card.value, card.suit))
+      print("{} {} {}".format(card.value, card.suit, card.weight))
 
 class Hand:
   def __init__(self, card1, card2):
@@ -62,6 +81,10 @@ class Table:
     self.flop()
     self.turn()
     self.river()
+    for player in self.active_players:
+      if(player.status!="out"):
+        pass
+        self.assign_hand_ranking(player)
     #self.showdown()
 
   def print_table(self):
@@ -189,10 +212,20 @@ class Table:
               #     give winner pot
     #
     # give the player the pot
-  
+
   #input: table.communitycards, player.hand
   #output: hand rank (royal flush, pair of Aces king kicker, straight to 9, 2s full of threes, ace high flush,)
   def assign_hand_ranking(self, player):
+    all_cards = []
+    all_cards.append(player.hand.card1)
+    all_cards.append(player.hand.card2)
+    for card in self.community_cards:
+      all_cards.append(card)
+
+    all_cards.sort(key=lambda x: x.weight)
+
+    print(all_cards)
+
     # check for royal flush
 
     # check for straight flush
@@ -204,7 +237,11 @@ class Table:
     # check for flush
 
     # check for straight
-
+    # for card in all_cards:
+    #   last_card_weight = 0
+    #   x = card.weight
+      
+      
     # check for 3 of a kind
 
     # check for 2 pair
