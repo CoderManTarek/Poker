@@ -1,4 +1,7 @@
 import random
+from tkinter import *
+import tkinter as tk
+
 #done
 class Card:
   def __init__(self, value, suit):
@@ -275,5 +278,17 @@ def main():
   #test shuffle
   table.deal()
 
+  # gui = Tk()
+  # #widgets
+  # gui.title("Poker App")
+  # gui.geometry("800x800")
+  # gui.mainloop()
+
 
 main()
+
+# gui = Tk()
+# #widgets
+# gui.title("Poker App")
+# gui.geometry("800x800")
+# gui.mainloop()
