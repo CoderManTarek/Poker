@@ -3,10 +3,18 @@ from tkinter import *
 import tkinter as tk
 
 #done
+from operator import attrgetter
+
 class Card:
-  def __init__(self, value, suit):
+  #constructor
+  def __init__(self, value, suit, weight):
     self.value = value
     self.suit = suit
+    self.weight = weight
+
+  def __repr__(self):
+        return '{' + self.value + ', ' + self.suit + ', ' + str(self.weight) + '}'
+
 
 #add shuffle
 class Deck:
@@ -16,7 +24,20 @@ class Deck:
     self.cards = []
     for i in self.values:
       for j in self.suits:
-        card = Card(i, j)
+        # get card weights
+        try:
+          # deal with numerical card values
+          k = int(i)
+        except:
+          #deal with face cards
+          face_card_weights = {
+            'J':11,
+            'Q':12,
+            'K':13,
+            'A':14
+          }
+          k = face_card_weights[i]
+        card = Card(i, j, k)
         self.cards.append(card)
   
   def shuffle(self):
@@ -24,8 +45,8 @@ class Deck:
 
   def print_cards_remaining(self):
     for card in self.cards:
-      print("{} {}".format(card.value, card.suit))
-#done
+      print("{} {} {}".format(card.value, card.suit, card.weight))
+
 class Hand:
   def __init__(self, card1, card2):
     self.card1 = card1
@@ -64,6 +85,10 @@ class Table:
     self.flop()
     self.turn()
     self.river()
+    for player in self.active_players:
+      if(player.status!="out"):
+        pass
+        self.assign_hand_ranking(player)
     #self.showdown()
 
   def print_table(self):
@@ -173,10 +198,67 @@ class Table:
   
   def showdown(self):
     pass
-          
-  
+    # objective: find the player that has the best hand and give them the pot
 
-# add raise(amount), check(), fold(), rebuy(amount)
+    # steps
+
+    # find the player with the best hand
+    # iterate through all players
+      # assign all of their hand rankings (make separate assign function assign(table.communitycards, player.hand) will return hand ranking)
+      # compare to see who had the highest hand type
+      #  if one player has a clear win (higher hand type than all other players)
+          # give them the pot
+      #   if  two players tie for best hand type
+      #       compare hand values (2-A)
+              # if values are the same
+              #     tie()
+              # else:
+              #     give winner pot
+    #
+    # give the player the pot
+
+  #input: table.communitycards, player.hand
+  #output: hand rank (royal flush, pair of Aces king kicker, straight to 9, 2s full of threes, ace high flush,)
+  def assign_hand_ranking(self, player):
+    all_cards = []
+    all_cards.append(player.hand.card1)
+    all_cards.append(player.hand.card2)
+    for card in self.community_cards:
+      all_cards.append(card)
+
+    all_cards.sort(key=lambda x: x.weight)
+
+    print(all_cards)
+
+    # check for royal flush
+
+    # check for straight flush
+
+    # check for 4 of a kind
+
+    # check for full house
+
+    # check for flush
+
+    # check for straight
+    # for card in all_cards:
+    #   last_card_weight = 0
+    #   x = card.weight
+      
+      
+    # check for 3 of a kind
+
+    # check for 2 pair
+
+    # check for pair
+
+    # default to high card
+
+    pass
+    #start from top of hand heirarchy, and check in decreasing order for qualifying hands
+
+
+# add rebuy(amount)
 class Player:
   num_of_players = 0
   def __init__(self, player_id, seat_number, stack, hand = None):
@@ -209,7 +291,7 @@ class Player:
       else:
         return 0
     # if all in or out (folded), skip player
-    #if(self.status == "all in" or self.status == "out"):
+    # if(self.status == "all in" or self.status == "out"):
      
     #  pass
     
