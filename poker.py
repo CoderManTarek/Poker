@@ -191,15 +191,15 @@ class Table:
     self.deck.cards.remove(self.deck.cards[0])
 
     # # delete this later (testing hand assign hand rankings function)
-    # for player in self.players:
-    #   player.hand.card1 = Card('A', 'diamond',14)
-    #   player.hand.card2 = Card('A', 'diamond',13)
+    for player in self.players:
+      player.hand.card1 = Card('A', 'diamond',14)
+      player.hand.card2 = Card('K', 'diamond',13)
 
-    #   self.community_cards[0] = Card('A', 'spade', 12)
-    #   self.community_cards[1] = Card('A', 'diamond', 11)
-    #   self.community_cards[2] = Card('10', 'diamond', 10)
+      self.community_cards[0] = Card('A', 'spade', 12)
+      self.community_cards[1] = Card('A', 'diamond', 11)
+      self.community_cards[2] = Card('10', 'diamond', 10)
 
-    #   print('{}'.format(self.assign_hand_ranking(player)))
+      print('{}'.format(self.assign_hand_ranking(player)))
 
 
 
@@ -241,29 +241,48 @@ class Table:
 
     print(all_cards)
 
+    best = []
+    desc = []
+    hand_max = 5
+
     # check for royal flush
     for suit in Deck.suits:
       suit_live = True
+      ind = []
       for val in ['10','J','Q','K','A']:
         if(suit_live == True):
           suit_live = False
-          for card in all_cards:
-            if(card.value == val and card.suit == suit and card.value == 'A'):
-              return "Royal Flush {}".format(card.suit)
-            if(card.value == val and card.suit == suit):
+          for i in range(len(all_cards)):
+            if(all_cards[i].value == val and all_cards[i].suit == suit and all_cards[i].value == 'A'):
+              for j in range(len(ind)):
+                best.append(all_cards[ind[j]-j])
+                all_cards.remove(all_cards[ind[j]-j])
+                desc.append("Royal Flush {}".format(all_cards[i].suit))
+              # return "Royal Flush {}".format(all_cards[i].suit)
+            if(all_cards[i].value == val and all_cards[i].suit == suit):
+              ind.append(i)
               suit_live = True
 
     # check for straight flush
 
 
     # check for 4 of a kind
-    for card in all_cards:
-      pair_counter = 0
-      for i in all_cards:
-        if(card.value == i.value):
-          pair_counter += 1
-          if(pair_counter == 4):
-            return "4 of a kind ({}'s)".format(card.value)
+    if hand_max-len(best) >= 4:
+      for card in all_cards:
+        pair_counter = 0
+        ind = []
+        for i in range(len(all_cards)):
+          if(card.value == all_cards[i].value):
+            if i not in ind:
+              ind.append(i)
+            pair_counter += 1
+            if(pair_counter == 4):
+              for j in range(len(ind)):
+                best.append(all_cards[ind[j]-j])
+                all_cards.remove(all_cards[ind[j]-j])
+              desc.append("4 of a kind ({}'s)".format(card.value))
+              break
+              # return "4 of a kind ({}'s)".format(card.value)
     
 
       
@@ -279,26 +298,54 @@ class Table:
     
       
     # check for 3 of a kind
-    for card in all_cards:
-      pair_counter = 0
-      for i in all_cards:
-        if(card.value == i.value):
-          pair_counter += 1
-          if(pair_counter == 3):
-            return "3 of a kind ({}'s)".format(card.value)
+    if hand_max-len(best) >= 3:
+      for card in all_cards:
+        pair_counter = 0
+        ind = []
+        for i in range(len(all_cards)):
+          if(card.value == all_cards[i].value):
+            if i not in ind:
+              ind.append(i)
+            pair_counter += 1
+            if(pair_counter == 3):
+              for j in range(len(ind)):
+                best.append(all_cards[ind[j]-j])
+                all_cards.remove(all_cards[ind[j]-j])
+              desc.append("3 of a kind ({}'s)".format(card.value))
+              break
+              # return "3 of a kind ({}'s)".format(card.value)
 
     # check for 2 pair
 
     # check for pair
-    for card in all_cards:
-      pair_counter = 0
-      for i in all_cards:
-        if(card.value == i.value):
-          pair_counter += 1
-          if(pair_counter == 2):
-            return "pair of ({}'s)".format(card.value)
+    while hand_max-len(best) >= 2:
+      for card in all_cards:
+        pair_counter = 0
+        ind = []
+        for i in range(len(all_cards)):
+          if(card.value == all_cards[i].value):
+            if i not in ind:
+                ind.append(i)
+            pair_counter += 1
+            if(pair_counter == 2):
+              for j in range(len(ind)):
+                best.append(all_cards[ind[j]-j])
+                all_cards.remove(all_cards[ind[j]-j])
+              desc.append("pair of ({}'s)".format(card.value))
+              break
+              # return "pair of ({}'s)".format(card.value)
 
     # default to high card
+    junk = False
+    while hand_max-len(best) >= 1:
+      best.append(all_cards[-1])
+      if junk == False:
+        desc.append("high card ({})".format(all_cards[-1].value))
+        junk = True
+      all_cards.remove(all_cards[-1])
+
+    return (best, desc)
+
 
 
 # add rebuy(amount)
