@@ -190,6 +190,19 @@ class Table:
     self.community_cards.append(self.deck.cards[0])
     self.deck.cards.remove(self.deck.cards[0])
 
+    # # delete this later (testing hand assign hand rankings function)
+    # for player in self.players:
+    #   player.hand.card1 = Card('A', 'diamond',14)
+    #   player.hand.card2 = Card('A', 'diamond',13)
+
+    #   self.community_cards[0] = Card('A', 'spade', 12)
+    #   self.community_cards[1] = Card('A', 'diamond', 11)
+    #   self.community_cards[2] = Card('10', 'diamond', 10)
+
+    #   print('{}'.format(self.assign_hand_ranking(player)))
+
+
+
     self.print_community_cards()
 
     self.decision()
@@ -389,7 +402,7 @@ def main():
 
   #test shuffle
   table.deal()
-  
+
   # gui = Tk()
   # gui.title("Poker App")
   # gui.config(bg="#D3D3D3")
