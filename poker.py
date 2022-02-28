@@ -229,10 +229,31 @@ class Table:
     print(all_cards)
 
     # check for royal flush
+    for suit in Deck.suits:
+      suit_live = True
+      for val in ['10','J','Q','K','A']:
+        if(suit_live == True):
+          suit_live = False
+          for card in all_cards:
+            if(card.value == val and card.suit == suit and card.value == 'A'):
+              return "Royal Flush {}".format(card.suit)
+            if(card.value == val and card.suit == suit):
+              suit_live = True
 
     # check for straight flush
 
+
     # check for 4 of a kind
+    for card in all_cards:
+      pair_counter = 0
+      for i in all_cards:
+        if(card.value == i.value):
+          pair_counter += 1
+          if(pair_counter == 4):
+            return "4 of a kind ({}'s)".format(card.value)
+    
+
+      
 
     # check for full house
 
@@ -242,18 +263,29 @@ class Table:
     # for card in all_cards:
     #   last_card_weight = 0
     #   x = card.weight
-      
+    
       
     # check for 3 of a kind
+    for card in all_cards:
+      pair_counter = 0
+      for i in all_cards:
+        if(card.value == i.value):
+          pair_counter += 1
+          if(pair_counter == 3):
+            return "3 of a kind ({}'s)".format(card.value)
 
     # check for 2 pair
 
     # check for pair
+    for card in all_cards:
+      pair_counter = 0
+      for i in all_cards:
+        if(card.value == i.value):
+          pair_counter += 1
+          if(pair_counter == 2):
+            return "pair of ({}'s)".format(card.value)
 
     # default to high card
-
-    pass
-    #start from top of hand heirarchy, and check in decreasing order for qualifying hands
 
 
 # add rebuy(amount)
@@ -358,22 +390,22 @@ def main():
   #test shuffle
   table.deal()
   
-  gui = Tk()
-  gui.title("Poker App")
-  gui.config(bg="#D3D3D3")
-  gui.geometry("1200x800")
-  gui.resizable(False, False)
-  #widgets
-  #room frame
-  room_frame = Frame(gui, bg="#505b62", width=1200, height=600)
-  room_frame.pack(padx=5, pady=5)
-  #table frame
-  table_frame = Frame(room_frame, bg="#35654d", width=800, height=300)
-  table_frame.place(x=200,y=150)
-  # #35654d poker green
+  # gui = Tk()
+  # gui.title("Poker App")
+  # gui.config(bg="#D3D3D3")
+  # gui.geometry("1200x800")
+  # gui.resizable(False, False)
+  # #widgets
+  # #room frame
+  # room_frame = Frame(gui, bg="#505b62", width=1200, height=600)
+  # room_frame.pack(padx=5, pady=5)
+  # #table frame
+  # table_frame = Frame(room_frame, bg="#35654d", width=800, height=300)
+  # table_frame.place(x=200,y=150)
+  # # #35654d poker green
 
 
-  gui.mainloop()
+  # gui.mainloop()
 
 
 main()
