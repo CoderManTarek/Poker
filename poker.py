@@ -286,6 +286,9 @@ class Player:
         c, amount = choice.split(' ')
         self.bet(amount)
         return "bet",int(amount)
+      #input to test gui
+      if(choice =='gui'):
+        gui()
       else:
         return 0
     # if all in or out (folded), skip player
@@ -340,7 +343,29 @@ class Player:
   
   def __str__(self):
     return "Player {}".format(self.player_id)
-    
+
+def gui():
+  
+  gui = Tk()
+  canvas = Canvas()
+  gui.title("Poker App")
+  gui.config(bg="#D3D3D3")
+  gui.geometry("1200x800")
+  gui.resizable(False, False)
+  #widgets
+  #room frame
+  room_frame = Frame(gui, bg="#505b62", width=1200, height=600)
+  room_frame.pack(padx=5, pady=5)
+  #table frame
+  table_frame = Canvas(room_frame, bg="#505b62", width=800, height=300, highlightthickness=0)
+  #table
+  #canvas.create_oval(200, 150, 1000, 450, outline = "black", fill = "white",width = 2)
+  table_frame.create_oval(0, 0, 800, 300, outline = "#65354d", fill = "#35654d",width = 2)
+  table_frame.place(relx=0.5, rely=0.5, anchor="center")
+  #table_frame.place(x=200,y=150)
+
+  # #35654d poker green
+  gui.mainloop()
 
 def main():
   players = []
@@ -357,23 +382,7 @@ def main():
 
   #test shuffle
   table.deal()
-  
-  gui = Tk()
-  gui.title("Poker App")
-  gui.config(bg="#D3D3D3")
-  gui.geometry("1200x800")
-  gui.resizable(False, False)
-  #widgets
-  #room frame
-  room_frame = Frame(gui, bg="#505b62", width=1200, height=600)
-  room_frame.pack(padx=5, pady=5)
-  #table frame
-  table_frame = Frame(room_frame, bg="#35654d", width=800, height=300)
-  table_frame.place(x=200,y=150)
-  # #35654d poker green
 
-
-  gui.mainloop()
 
 
 main()
