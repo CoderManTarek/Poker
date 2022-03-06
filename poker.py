@@ -190,6 +190,19 @@ class Table:
     self.community_cards.append(self.deck.cards[0])
     self.deck.cards.remove(self.deck.cards[0])
 
+    # # delete this later (testing hand assign hand rankings function)
+    for player in self.players:
+      player.hand.card1 = Card('A', 'diamond',14)
+      player.hand.card2 = Card('K', 'diamond',13)
+
+      self.community_cards[0] = Card('A', 'spade', 12)
+      self.community_cards[1] = Card('A', 'diamond', 11)
+      self.community_cards[2] = Card('10', 'diamond', 10)
+
+      print('{}'.format(self.assign_hand_ranking(player)))
+
+
+
     self.print_community_cards()
 
     self.decision()
@@ -228,11 +241,51 @@ class Table:
 
     print(all_cards)
 
+    best = []
+    desc = []
+    hand_max = 5
+
     # check for royal flush
+    for suit in Deck.suits:
+      suit_live = True
+      ind = []
+      for val in ['10','J','Q','K','A']:
+        if(suit_live == True):
+          suit_live = False
+          for i in range(len(all_cards)):
+            if(all_cards[i].value == val and all_cards[i].suit == suit and all_cards[i].value == 'A'):
+              for j in range(len(ind)):
+                best.append(all_cards[ind[j]-j])
+                all_cards.remove(all_cards[ind[j]-j])
+                desc.append("Royal Flush {}".format(all_cards[i].suit))
+              # return "Royal Flush {}".format(all_cards[i].suit)
+            if(all_cards[i].value == val and all_cards[i].suit == suit):
+              ind.append(i)
+              suit_live = True
 
     # check for straight flush
 
+
     # check for 4 of a kind
+    if hand_max-len(best) >= 4:
+      for card in all_cards:
+        pair_counter = 0
+        ind = []
+        for i in range(len(all_cards)):
+          if(card.value == all_cards[i].value):
+            if i not in ind:
+              ind.append(i)
+            pair_counter += 1
+            if(pair_counter == 4):
+              for j in range(len(ind)):
+                best.append(all_cards[ind[j]-j])
+                all_cards.remove(all_cards[ind[j]-j])
+              desc.append("4 of a kind ({}'s)".format(card.value))
+              break
+              # return "4 of a kind ({}'s)".format(card.value)
+    
+
+      
 
     # check for full house
 
@@ -242,18 +295,57 @@ class Table:
     # for card in all_cards:
     #   last_card_weight = 0
     #   x = card.weight
-      
+    
       
     # check for 3 of a kind
+    if hand_max-len(best) >= 3:
+      for card in all_cards:
+        pair_counter = 0
+        ind = []
+        for i in range(len(all_cards)):
+          if(card.value == all_cards[i].value):
+            if i not in ind:
+              ind.append(i)
+            pair_counter += 1
+            if(pair_counter == 3):
+              for j in range(len(ind)):
+                best.append(all_cards[ind[j]-j])
+                all_cards.remove(all_cards[ind[j]-j])
+              desc.append("3 of a kind ({}'s)".format(card.value))
+              break
+              # return "3 of a kind ({}'s)".format(card.value)
 
     # check for 2 pair
 
     # check for pair
+    while hand_max-len(best) >= 2:
+      for card in all_cards:
+        pair_counter = 0
+        ind = []
+        for i in range(len(all_cards)):
+          if(card.value == all_cards[i].value):
+            if i not in ind:
+                ind.append(i)
+            pair_counter += 1
+            if(pair_counter == 2):
+              for j in range(len(ind)):
+                best.append(all_cards[ind[j]-j])
+                all_cards.remove(all_cards[ind[j]-j])
+              desc.append("pair of ({}'s)".format(card.value))
+              break
+              # return "pair of ({}'s)".format(card.value)
 
     # default to high card
+    junk = False
+    while hand_max-len(best) >= 1:
+      best.append(all_cards[-1])
+      if junk == False:
+        desc.append("high card ({})".format(all_cards[-1].value))
+        junk = True
+      all_cards.remove(all_cards[-1])
 
-    pass
-    #start from top of hand heirarchy, and check in decreasing order for qualifying hands
+    return (best, desc)
+
 
 
 # add rebuy(amount)
