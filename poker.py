@@ -84,17 +84,13 @@ class Table:
     self.flop()
     self.turn()
     self.river()
-    for player in self.active_players:
-      if(player.status!="out"):
-        pass
-        self.assign_hand_ranking(player)
-    #self.showdown()
+    self.showdown()
 
   def print_table(self):
     print("Pot: ${}".format(self.pot))
     for player in self.active_players:
       if(player.status != "out"):
-        print("Player {} [Starting Stack: ${}]: {}{} {}{}".format(player.player_id, player.stack, player.hand.card1.value, player.hand.card1.suit[0], player.hand.card2.value, player.hand.card2.suit[0]))
+        print("Player {} [Stack: ${}]: {}{} {}{}".format(player.player_id, player.stack, player.hand.card1.value, player.hand.card1.suit[0], player.hand.card2.value, player.hand.card2.suit[0]))
 
   def decision(self):
     
@@ -196,34 +192,67 @@ class Table:
 
     self.decision()
 
-    # # delete this later (testing hand assign hand rankings function)
-    for player in self.players:
-      player.hand.card1 = Card('8', 'diamond',8)
-      player.hand.card2 = Card('3', 'diamond',3)
+    # # # delete this later (testing hand assign hand rankings function)
+    # for player in self.players:
+    #   player.hand.card1 = Card('8', 'diamond',8)
+    #   player.hand.card2 = Card('3', 'diamond',3)
 
-      self.community_cards[0] = Card('A', 'heart', 14)
-      self.community_cards[1] = Card('5', 'spade', 5)
-      self.community_cards[2] = Card('A', 'diamond', 14)
-      self.community_cards[3] = Card('8', 'heart', 8)
-      self.community_cards[4] = Card('9', 'spade', 9)
+    #   self.community_cards[0] = Card('A', 'heart', 14)
+    #   self.community_cards[1] = Card('5', 'spade', 5)
+    #   self.community_cards[2] = Card('A', 'diamond', 14)
+    #   self.community_cards[3] = Card('8', 'heart', 8)
+    #   self.community_cards[4] = Card('9', 'spade', 9)
 
-      print('{}'.format(self.assign_hand_ranking(player)))
+    #   print('{}'.format(self.assign_hand_ranking(player)))
   
   def showdown(self):
-    pass
     # objective: find the player that has the best hand and give them the pot
 
     # steps
 
     # find the player with the best hand
+
     # iterate through all players
-      # assign all of their hand rankings (make separate assign function assign(table.communitycards, player.hand) will return hand ranking)
-      # compare to see who had the highest hand type
-      #  if one player has a clear win (higher hand type than all other players)
-          # give them the pot
-      #   if  two players tie for best hand type
-      #       compare hand values (2-A)
-              # if values are the same
+    for player in self.players:
+
+      # check to see if player folded before showdown
+      if(player.status != "out"):
+
+        # assign all of their hand rankings
+        player.hand_data.append(self.assign_hand_ranking(player))
+
+    # # test (delete later)
+    # for i in self.players:
+    #   print("Player {} Hand: {} Hand Rank: {}".format(i.player_id, i.hand_data, i.hand_rank))
+      
+    
+    top_hand_rank = -1
+    winning_player = Player()
+    tie = False
+    for player in self.players:
+      if(player.status!="out"):
+        if(player.hand_rank == top_hand_rank):
+          tie = True
+        if(player.hand_rank>top_hand_rank):
+          winning_player = player
+          top_hand_rank = player.hand_rank
+          tie = False
+    
+    #  if one player has a clear win (higher hand type than all other players)
+    if(tie == False):
+      # give them the pot
+      winning_player.stack += self.pot
+      self.pot = 0
+
+      # test (delete this later)
+      for player in self.players:
+        print("Player {} [Stack: ${}]: {}{} {}{}".format(player.player_id, player.stack, player.hand.card1.value, player.hand.card1.suit[0], player.hand.card2.value, player.hand.card2.suit[0]))
+    
+    else:
+      pass
+    # if  two players tie for best hand type
+      # compare hand values (2-A)
+      # if values are the same
               #     tie()
               # else:
               #     give winner pot
@@ -276,7 +305,8 @@ class Table:
           suit_live = False
           for card in all_cards:
             if(card.value == val and card.suit == suit and card.value == 'A'):
-              return "Royal Flush {}".format(card.suit)
+              player.hand_rank = 9
+              return ["Royal Flush {}".format(card.suit)]
             if(card.value == val and card.suit == suit):
               suit_live = True
 
@@ -299,7 +329,8 @@ class Table:
             count += 1
             card_found = True
             if(count == 5):
-              return "Straight Flush {} high".format(high)
+              player.hand_rank = 8
+              return ["Straight Flush {} high".format(high)]
             continue
         if(card_found == False):
           count = 0
@@ -320,10 +351,11 @@ class Table:
                 kicker = j
                 kicker_weight = j.weight
 
-            return "4 of a kind ({}'s) [{} kicker]".format(card.value, kicker.value)
+            player.hand_rank = 7
+            return ["4 of a kind ({}'s) [{} kicker]".format(card.value, kicker.value)]
             #return kicker
     
-    # done
+    # not done
     # check for full house
     trips = ''
     pair = ''
@@ -349,7 +381,8 @@ class Table:
             pair = card.value
 
     if(trips != '' and pair != ''):
-      return "Full House {}'s full of {}'s".format(trips, pair)
+      player.hand_rank = 6
+      return ["Full House {}'s full of {}'s".format(trips, pair)]
 
     #done
     # check for flush
@@ -374,7 +407,8 @@ class Table:
 
             # stop condition
             if(count == 5):
-              return "Flush {} high".format(high), flush_cards
+              player.hand_rank = 5
+              return ["Flush {} high".format(high), flush_cards]
 
 
 
@@ -401,7 +435,8 @@ class Table:
 
           # stop condition
           if(count == 5):
-            return "Straight {} high".format(high)
+            player.hand_rank = 4
+            return ["Straight {} high".format(high)]
           continue
         
       if(card_found == False):
@@ -416,14 +451,15 @@ class Table:
         if(card.value == i.value):
           pair_counter += 1
           if(pair_counter == 3):
-            return "3 of a kind ({}'s)".format(card.value), self.find_high_cards(all_cards, 2, card.value)
+            player.hand_rank = 3
+            return ["3 of a kind ({}'s)".format(card.value), self.find_high_cards(all_cards, 2, card.value)]
             
 
     # check for 2 pair
     pair1 = ''
     pair2 = ''
 
-    # find three of a kind
+    # find pair 1
     for val in ['A', 'K', 'Q', 'J', '10', '9', '8', '7', '6', '5', '4', '3', '2']:
       pair_counter = 0
       for card in all_cards:
@@ -432,7 +468,7 @@ class Table:
           if(pair_counter == 2):
             pair1 = card.value
     
-    # find pair
+    # find pair 2
     for val in ['A', 'K', 'Q', 'J', '10', '9', '8', '7', '6', '5', '4', '3', '2']:
       pair_counter = 0
       for card in all_cards:
@@ -450,7 +486,8 @@ class Table:
         for card in all_cards:
           if (card.value == val and card.value != pair1 and card.value != pair2):
             kicker = card
-            return"Two Pair {}'s and {}'s".format(pair1, pair2), kicker
+            player.hand_rank = 2
+            return ["Two Pair {}'s and {}'s".format(pair1, pair2), kicker]
 
     # done
     # check for pair
@@ -460,19 +497,20 @@ class Table:
         if(card.value == i.value):
           pair_counter += 1
           if(pair_counter == 2):
-            return "pair of ({}'s)".format(card.value), self.find_high_cards(all_cards, 3, card.value)
+            player.hand_rank = 1
+            return ["Pair of ({}'s)".format(card.value), self.find_high_cards(all_cards, 3, card.value)]
 
     #done
     # default to high card
     high_cards = self.find_high_cards(all_cards, 5, '')
-    return "High card {}".format(high_cards[0].value), high_cards
+    return ["High card {}".format(high_cards[0].value), high_cards]
 
 
 
 # add rebuy(amount)
 class Player:
   num_of_players = 0
-  def __init__(self, player_id, seat_number, stack, hand = None):
+  def __init__(self, player_id = -1, seat_number = -1, stack = -1, hand = None):
     self.player_id = player_id
     self.seat_number = seat_number
     self.stack = stack
@@ -480,6 +518,8 @@ class Player:
     self.status = "out" # out (folded), starting round, in (money owed), in (money not owed), all in
     self.owed = 0
     self.money_out = 0
+    self.hand_rank = 0
+    self.hand_data = []
   
   # check to see if player has action (is it my turn?) if they do have the action, give them the ability to check, bet, fold, call, etc
   def handle_action(self):
