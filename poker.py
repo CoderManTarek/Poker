@@ -1173,20 +1173,20 @@ def main():
     server.run()
 
 
-  players = []
+  # players = []
 
-  # #instantiate players
-  # for i in range(9):
-  #   x = Player(i+1, i+1, 200)
-  #   players.append(x)
+  # # #instantiate players
+  # # for i in range(9):
+  # #   x = Player(i+1, i+1, 200)
+  # #   players.append(x)
 
 
-  # instantiate deck and table
-  deck = Deck()
-  table = Table(deck, 9, players)
+  # # instantiate deck and table
+  # deck = Deck()
+  # table = Table(deck, 9, players)
 
-  #test shuffle
-  table.deal()
+  # #test shuffle
+  # table.deal()
 
 
 
