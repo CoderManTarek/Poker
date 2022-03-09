@@ -253,9 +253,14 @@ class Table:
     # if  two players tie for best hand type
       # compare hand values (2-A)
       # if values are the same
-              #     tie()
-              # else:
-              #     give winner pot
+          # tie for for straight
+          # compare kickers/high cards for high card, pair, two pair, 3 of a kind, flush, full house, 4 of a kind
+            # if kickers are the same
+              # tie()
+            # else:
+              # give winner pot
+      # else
+        # give winner pot
     #
     # give the player the pot
 
@@ -355,7 +360,7 @@ class Table:
             return ["4 of a kind ({}'s) [{} kicker]".format(card.value, kicker.value)]
             #return kicker
     
-    # not done
+    # done
     # check for full house
     trips = ''
     pair = ''
