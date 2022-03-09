@@ -573,7 +573,8 @@ class PlayerGUI:
     lb_img_chips.grid(row=2, column=0)
 
     #player frame widgets
-    #if player is seated
+    #if player is seated, display player info
+    #ADD if player is seated AND seat is empty, display empty seat
     player_is_seated = True
     if player_is_seated == True:
       lb_img_card_one = Label(card_one_frame, bg="#505b62", image=img_card_back)
@@ -594,7 +595,7 @@ class PlayerGUI:
       entry_buy_in = Entry(player_frame, width=6, bg="#505b62")
       buy_in_min = 10
       entry_buy_in.insert(0, str(buy_in_min))
-      #add later, if player bank < max buyin, buy_in_max = bank 
+      #ADD validation and dynamic value if player bank < max buyin, buy_in_max = bank 
       buy_in_max = 200
       buy_in_range = "$" + str(buy_in_min) + "-" + "$" + str(buy_in_max)
       lb_buy_in_range = Label(player_frame, bg="#505b62", text=buy_in_range, font="Helvetica 10 bold")
@@ -617,8 +618,10 @@ def initialize_card_images():
 
 def return_card_frame(parent, color):
   if color == "gray":
+    #room frame background color (gray)
     bg = "#505b62"
   else:
+    #table frame background color (felt green)
     bg = "#35654d"
   card_frame = LabelFrame(parent, bg=bg, width=50, height=68, borderwidth=2, relief="groove")
   return card_frame
@@ -665,6 +668,7 @@ def gui():
   lb_img_pot.place(x=400, y=80, anchor="c")
   lb_pot.place(x=400, y=120, anchor="c")
 
+  #Display community cards
   community_cards_frame = Frame(table_frame, bg="#35654d", width=300, height=72)
   community_cards_frame.place(x=400, y=185, anchor="c")
 
@@ -719,21 +723,23 @@ def gui():
   bttn_action1 = Button(action_frame, image=img_fold, borderwidth=0, state=action_status)
 
   table_bet_status = 0
-  #if no bets yet
+  #if no bets yet: show check/bet buttons
   if table_bet_status == 0:
     action_2 = img_check
     action_3 = img_bet
-  #if one bet on table
+  #if one bet on table: raise instead of bet button
   if table_bet_status == 1:
     action_2 = img_call
     action_3 = img_raise
-  #if someone has raised
+  #if someone has raised: re-raise button instead of raise
   if table_bet_status == 2:
     action_2 = img_call
     action_3 = img_reraise
 
   bttn_action2 = Button(action_frame, image=action_2, borderwidth=0, state=action_status)
   bttn_action3 = Button(action_frame, image=action_3, borderwidth=0, state=action_status)
+  # Bet/Raise/Re-raise amount Entry box
+  #ADD validation, dynamic min/max values
   entry_bet_amount = Entry(action_frame, width=6)
   bet_min = 2
   bet_max = 200
@@ -742,10 +748,10 @@ def gui():
   lb_bet_range = Label(action_frame, text=bet_range, font="Helvetica 10 bold")
 
   player_is_seated = True
-  #if player is seated
+  #if player is seated: show cash out button
   if player_is_seated == True:
     action_4 = img_cash_out
-  #else player is not seated
+  #else player is not seated: show leave table button
   else:
     action_4 = img_leave_table
   bttn_action4 = Button(action_frame, image=action_4, borderwidth=0)
