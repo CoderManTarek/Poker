@@ -7,6 +7,7 @@ To Do:
 
 - python game logic
   - finish showdown function
+    - fix full house (ties)  
   - set positions/blinds
   - fix dealing issue
 
