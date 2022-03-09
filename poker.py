@@ -436,25 +436,51 @@ class Player:
   def __str__(self):
     return "Player {}".format(self.player_id)
 
+class PlayerGUI:
+  def __init__(self, room_frame, x, y):
+    #frame for each player
+    player_frame = Frame(room_frame, bg="#505b62", width=104, height=140)
+    player_frame.place(x=x, y=y)
+
+    #player frame widgets
+    card_one_frame= LabelFrame(player_frame, bg="#505b62", width=50, height=70, borderwidth=2, relief="groove")
+    card_two_frame= LabelFrame(player_frame, bg="#505b62", width=50, height=70, borderwidth=2, relief="groove")
+    lb_player_name = Label(player_frame, text="Test Player Name", anchor="center")
+    lb_player_stack = Label(player_frame, text="Test Player Stack")
+    lb_player_seat = Label(player_frame, text="Test Player Seat", anchor="center")
+
+    card_one_frame.grid(row=0,column=0)
+    card_two_frame.grid(row=0,column=1)
+    lb_player_name.grid(row=1, column=0, columnspan=2)
+    lb_player_stack.grid(row=2, column=0, columnspan=2)
+    lb_player_seat.grid(row=3, column=0, columnspan=2)
+
 def gui():
-  
+  #GUI window
   gui = Tk()
   canvas = Canvas()
   gui.title("Poker App")
   gui.config(bg="#D3D3D3")
   gui.geometry("1200x800")
   gui.resizable(False, False)
-  #widgets
+
+  #window widgets
   #room frame
   room_frame = Frame(gui, bg="#505b62", width=1200, height=600)
   room_frame.pack(padx=5, pady=5)
+
   #table frame
   table_frame = Canvas(room_frame, bg="#505b62", width=800, height=300, highlightthickness=0)
-  #table
-  #canvas.create_oval(200, 150, 1000, 450, outline = "black", fill = "white",width = 2)
   table_frame.create_oval(0, 0, 800, 300, outline = "#65354d", fill = "#35654d",width = 2)
   table_frame.place(relx=0.5, rely=0.5, anchor="center")
-  #table_frame.place(x=200,y=150)
+
+  #Coordinates of each player frame
+  coord_list = [(548, 458), (278, 438), (48, 258), (200, 50), (428, 6), (668, 6), (896, 50), (1048, 258), (818, 438)] 
+  
+  #Loop to create frame for each player
+  player_gui_list = []
+  for x, y in coord_list:
+    player_gui_list.append(PlayerGUI(room_frame, x, y))
 
   # #35654d poker green
   gui.mainloop()
