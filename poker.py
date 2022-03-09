@@ -631,6 +631,7 @@ def gui():
   gui.config(bg="#D3D3D3")
   gui.geometry("1200x800")
   gui.resizable(False, False)
+  gui.iconbitmap("img/app_icon.ico")
 
   #initialize images
   img_leave_table = PhotoImage(file="img/leave_table.png")
