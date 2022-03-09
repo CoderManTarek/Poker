@@ -6,5 +6,6 @@ To Do:
 
 - finish showdown function
 - set positions/blinds
+- fix dealing issue
 
 - client socket API 
