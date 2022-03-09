@@ -2,10 +2,10 @@
 
 To Do:
 
-finish hand rankings
-set positions
-set blinds
+- finish showdown function
+- set positions
+- set blinds
 
-gui in tkinter
+- connect tkinter gui to functional logic
 
-client socket API 
+- client socket API 
