@@ -198,12 +198,12 @@ class Table:
 
     # # delete this later (testing hand assign hand rankings function)
     for player in self.players:
-      player.hand.card1 = Card('8', 'diamond',2)
+      player.hand.card1 = Card('8', 'diamond',8)
       player.hand.card2 = Card('3', 'diamond',3)
 
-      self.community_cards[0] = Card('A', 'heart', 12)
+      self.community_cards[0] = Card('A', 'heart', 14)
       self.community_cards[1] = Card('5', 'spade', 5)
-      self.community_cards[2] = Card('A', 'diamond', 10)
+      self.community_cards[2] = Card('A', 'diamond', 14)
       self.community_cards[3] = Card('8', 'heart', 8)
       self.community_cards[4] = Card('9', 'spade', 9)
 
@@ -443,8 +443,14 @@ class Table:
           if(pair_counter == 2):
             pair2 = card.value
 
+
+
     if(pair1 != '' and pair2 != ''):
-      return"Two Pair {}'s and {}'s".format(pair1, pair2)
+      for val in ['A', 'K', 'Q', 'J', '10', '9', '8', '7', '6', '5', '4', '3', '2']:
+        for card in all_cards:
+          if (card.value == val and card.value != pair1 and card.value != pair2):
+            kicker = card
+            return"Two Pair {}'s and {}'s".format(pair1, pair2), kicker
 
     # done
     # check for pair
