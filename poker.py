@@ -190,22 +190,23 @@ class Table:
     self.community_cards.append(self.deck.cards[0])
     self.deck.cards.remove(self.deck.cards[0])
 
-    # # delete this later (testing hand assign hand rankings function)
-    for player in self.players:
-      player.hand.card1 = Card('A', 'diamond',14)
-      player.hand.card2 = Card('K', 'diamond',13)
-
-      self.community_cards[0] = Card('A', 'spade', 12)
-      self.community_cards[1] = Card('A', 'diamond', 11)
-      self.community_cards[2] = Card('10', 'diamond', 10)
-
-      print('{}'.format(self.assign_hand_ranking(player)))
-
-
 
     self.print_community_cards()
 
     self.decision()
+
+    # # delete this later (testing hand assign hand rankings function)
+    for player in self.players:
+      player.hand.card1 = Card('2', 'diamond',2)
+      player.hand.card2 = Card('3', 'diamond',3)
+
+      self.community_cards[0] = Card('A', 'heart', 12)
+      self.community_cards[1] = Card('5', 'spade', 5)
+      self.community_cards[2] = Card('A', 'diamond', 10)
+      self.community_cards[3] = Card('8', 'heart', 8)
+      self.community_cards[4] = Card('9', 'spade', 9)
+
+      print('{}'.format(self.assign_hand_ranking(player)))
   
   def showdown(self):
     pass
@@ -228,6 +229,30 @@ class Table:
     #
     # give the player the pot
 
+  # helper function
+  @staticmethod
+  def find_high_cards(all_cards, x, excluded_value):
+    # default to high card
+    high = ''
+    high_cards = []
+    count = 0
+    for val in ['A', 'K', 'Q', 'J', '10', '9', '8', '7', '6', '5', '4', '3', '2']:
+      for card in all_cards:
+
+        #start condition
+        if(high == '' and count == 0 and card.value == val and val != excluded_value):
+          high = card.value
+          count += 1
+          high_cards.append(card)
+          continue
+        
+        
+        if(card.value == val and val != excluded_value):
+          count +=1
+          high_cards.append(card)
+          if(count == x):
+            return high_cards
+
   #input: table.communitycards, player.hand
   #output: hand rank (royal flush, pair of Aces king kicker, straight to 9, 2s full of threes, ace high flush,)
   def assign_hand_ranking(self, player):
@@ -239,112 +264,176 @@ class Table:
 
     all_cards.sort(key=lambda x: x.weight)
 
-    print(all_cards)
+    #print(all_cards)
 
-    best = []
-    desc = []
-    hand_max = 5
-
+    #good
     # check for royal flush
     for suit in Deck.suits:
       suit_live = True
-      ind = []
       for val in ['10','J','Q','K','A']:
         if(suit_live == True):
           suit_live = False
-          for i in range(len(all_cards)):
-            if(all_cards[i].value == val and all_cards[i].suit == suit and all_cards[i].value == 'A'):
-              for j in range(len(ind)):
-                best.append(all_cards[ind[j]-j])
-                all_cards.remove(all_cards[ind[j]-j])
-                desc.append("Royal Flush {}".format(all_cards[i].suit))
-              # return "Royal Flush {}".format(all_cards[i].suit)
-            if(all_cards[i].value == val and all_cards[i].suit == suit):
-              ind.append(i)
+          for card in all_cards:
+            if(card.value == val and card.suit == suit and card.value == 'A'):
+              return "Royal Flush {}".format(card.suit)
+            if(card.value == val and card.suit == suit):
               suit_live = True
 
+    #good
     # check for straight flush
+    for suit in Deck.suits:
+      count = 0
+      high = ''
+      for val in ['K', 'Q', 'J', '10', '9', '8', '7', '6', '5', '4', '3', '2', 'A']:
+        card_found = False
+        for card in all_cards:
+          if(card_found ==True):
+            break
+          if(card.value == val and card.suit == suit and count == 0):
+            high = card.value
+            card_found = True
+            count += 1
+            continue
+          if(card.value == val and card.suit == suit):
+            count += 1
+            card_found = True
+            if(count == 5):
+              return "Straight Flush {} high".format(high)
+            continue
+        if(card_found == False):
+          count = 0
+          high = ''
 
-
+              
+    # good
     # check for 4 of a kind
-    if hand_max-len(best) >= 4:
-      for card in all_cards:
-        pair_counter = 0
-        ind = []
-        for i in range(len(all_cards)):
-          if(card.value == all_cards[i].value):
-            if i not in ind:
-              ind.append(i)
-            pair_counter += 1
-            if(pair_counter == 4):
-              for j in range(len(ind)):
-                best.append(all_cards[ind[j]-j])
-                all_cards.remove(all_cards[ind[j]-j])
-              desc.append("4 of a kind ({}'s)".format(card.value))
-              break
-              # return "4 of a kind ({}'s)".format(card.value)
+    for card in all_cards:
+      pair_counter = 0
+      for i in all_cards:
+        if(card.value == i.value):
+          pair_counter += 1
+          if(pair_counter == 4):
+            kicker_weight = 0
+            for j in all_cards:
+              if(kicker_weight < j.weight):
+                kicker = j
+                kicker_weight = j.weight
+
+            return "4 of a kind ({}'s) [{} kicker]".format(card.value, kicker.value)
+            #return kicker
     
-
-      
-
+    # not done
     # check for full house
+    trips = ''
+    pair = ''
 
-    # check for flush
-
-    # check for straight
-    # for card in all_cards:
-    #   last_card_weight = 0
-    #   x = card.weight
-    
-      
-    # check for 3 of a kind
-    if hand_max-len(best) >= 3:
+    # find three of a kind
+    for val in ['A', 'K', 'Q', 'J', '10', '9', '8', '7', '6', '5', '4', '3', '2']:
+      pair_counter = 0
       for card in all_cards:
-        pair_counter = 0
-        ind = []
-        for i in range(len(all_cards)):
-          if(card.value == all_cards[i].value):
-            if i not in ind:
-              ind.append(i)
-            pair_counter += 1
-            if(pair_counter == 3):
-              for j in range(len(ind)):
-                best.append(all_cards[ind[j]-j])
-                all_cards.remove(all_cards[ind[j]-j])
-              desc.append("3 of a kind ({}'s)".format(card.value))
-              break
-              # return "3 of a kind ({}'s)".format(card.value)
+        if (card.value == val):
+          pair_counter += 1
+          if(pair_counter == 3):
+            trips = card.value
+    
+    # find pair
+    for val in ['A', 'K', 'Q', 'J', '10', '9', '8', '7', '6', '5', '4', '3', '2']:
+      pair_counter = 0
+      for card in all_cards:
+        if(card.value == trips):
+          continue
+        if (card.value == val):
+          pair_counter += 1
+          if(pair_counter == 2):
+            pair = card.value
+
+    if(trips != '' and pair != ''):
+      return "Full House {}'s full of {}'s".format(trips, pair)
+
+    #done
+    # check for flush
+    for suit in Deck.suits:
+      high = ''
+      flush_cards = []
+      count = 0
+      for val in ['A', 'K', 'Q', 'J', '10', '9', '8', '7', '6', '5', '4', '3', '2']:
+        for card in all_cards:
+
+          #start condition
+          if(high == '' and count == 0 and card.suit == suit and card.value == val):
+            high = card.value
+            count += 1
+            flush_cards.append(card)
+            continue
+          
+          
+          if(card.suit == suit and card.value == val):
+            count +=1
+            flush_cards.append(card)
+
+            # stop condition
+            if(count == 5):
+              return "Flush {} high".format(high), flush_cards
+
+
+
+
+    #done
+    # check for straight
+    count = 0
+    high = ''
+    for val in ['A', 'K', 'Q', 'J', '10', '9', '8', '7', '6', '5', '4', '3', '2', 'A']:
+      card_found = False
+      for card in all_cards:
+        if(card_found ==True):
+          break
+
+        # start condition
+        if(card.value == val and count == 0):
+          high = card.value
+          card_found = True
+          count += 1
+          continue
+        if(card.value == val):
+          count += 1
+          card_found = True
+
+          # stop condition
+          if(count == 5):
+            return "Straight {} high".format(high)
+          continue
+        
+      if(card_found == False):
+        count = 0
+        high = ''
+
+    # done     
+    # check for 3 of a kind
+    for card in all_cards:
+      pair_counter = 0
+      for i in all_cards:
+        if(card.value == i.value):
+          pair_counter += 1
+          if(pair_counter == 3):
+            return "3 of a kind ({}'s)".format(card.value), self.find_high_cards(all_cards, 2, card.value)
+            
 
     # check for 2 pair
 
+    # done
     # check for pair
-    while hand_max-len(best) >= 2:
-      for card in all_cards:
-        pair_counter = 0
-        ind = []
-        for i in range(len(all_cards)):
-          if(card.value == all_cards[i].value):
-            if i not in ind:
-                ind.append(i)
-            pair_counter += 1
-            if(pair_counter == 2):
-              for j in range(len(ind)):
-                best.append(all_cards[ind[j]-j])
-                all_cards.remove(all_cards[ind[j]-j])
-              desc.append("pair of ({}'s)".format(card.value))
-              break
-              # return "pair of ({}'s)".format(card.value)
+    for card in all_cards:
+      pair_counter = 0
+      for i in all_cards:
+        if(card.value == i.value):
+          pair_counter += 1
+          if(pair_counter == 2):
+            return "pair of ({}'s)".format(card.value), self.find_high_cards(all_cards, 3, card.value)
 
+    #done
     # default to high card
-    junk = False
-    while hand_max-len(best) >= 1:
-      best.append(all_cards[-1])
-      if junk == False:
-        desc.append("high card ({})".format(all_cards[-1].value))
-        junk = True
-      all_cards.remove(all_cards[-1])
-
-    return (best, desc)
+    high_cards = self.find_high_cards(all_cards, 5, '')
+    return "High card {}".format(high_cards[0].value), high_cards
 
 
 
