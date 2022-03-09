@@ -564,8 +564,8 @@ class PlayerGUI:
     player_frame.place(x=x, y=y)
 
     #player frame widgets
-    card_one_frame = LabelFrame(player_frame, bg="#505b62", width=50, height=68, borderwidth=2, relief="groove")
-    card_two_frame = LabelFrame(player_frame, bg="#505b62", width=50, height=68, borderwidth=2, relief="groove")
+    card_one_frame = return_card_frame(player_frame, "gray")
+    card_two_frame = return_card_frame(player_frame, "gray")
     lb_img_card_one = Label(card_one_frame, bg="#505b62", image=img_card_back)
     lb_img_card_two = Label(card_two_frame, bg="#505b62", image=img_card_back)
     lb_player_name = Label(player_frame, bg="#505b62", text="Test Player Name", font="Helvetica 10 bold")
@@ -596,6 +596,13 @@ def initialize_card_images():
       card_images[card_name] = PhotoImage(file=file_string)
   return card_images
 
+def return_card_frame(parent, color):
+  if color == "gray":
+    bg = "#505b62"
+  else:
+    bg = "#35654d"
+  card_frame = LabelFrame(parent, bg=bg, width=50, height=68, borderwidth=2, relief="groove")
+  return card_frame
 
 def gui():
   #GUI window
@@ -611,7 +618,9 @@ def gui():
   img_pot = PhotoImage(file="img/pot.png")
   img_card_back = PhotoImage(file="img/card_back.png")
   card_images = initialize_card_images()
+
   #window widgets
+
   #room frame
   room_frame = Frame(gui, bg="#505b62", width=1200, height=600)
   room_frame.pack()
@@ -624,12 +633,35 @@ def gui():
   lb_img_pot = Label(table_frame, bg="#35654d", image=img_pot)
   lb_pot = Label(table_frame, bg="#35654d", text="$1000", font="Helvetica 16 bold")
 
-  lb_img_pot.place(x=375, y=25)
-  lb_pot.place(x=375, y=85)
+  lb_img_pot.place(x=400, y=80, anchor="c")
+  lb_pot.place(x=400, y=120, anchor="c")
 
-  # lb_community_card_1 = Label(table_frame, bg="#35654d", image=card_images["h12"])
-  # lb_community_card_1.place(x=400, y=150)
+  community_cards_frame = Frame(table_frame, bg="#35654d", width=300, height=72)
+  community_cards_frame.place(x=400, y=185, anchor="c")
 
+  lbframe_community_card1 = return_card_frame(community_cards_frame, "green")
+  lbframe_community_card2 = return_card_frame(community_cards_frame, "green")
+  lbframe_community_card3 = return_card_frame(community_cards_frame, "green")
+  lbframe_community_card4 = return_card_frame(community_cards_frame, "green")
+  lbframe_community_card5 = return_card_frame(community_cards_frame, "green")
+
+  lbframe_community_card1.grid(row=0, column=0)
+  lbframe_community_card2.grid(row=0, column=1)
+  lbframe_community_card3.grid(row=0, column=2)
+  lbframe_community_card4.grid(row=0, column=3)
+  lbframe_community_card5.grid(row=0, column=4)
+
+  img_community_card1 = Label(lbframe_community_card1, bg="#35654d", image=card_images["d3"])
+  img_community_card2 = Label(lbframe_community_card2, bg="#35654d", image=card_images["h13"])
+  img_community_card3 = Label(lbframe_community_card3, bg="#35654d", image=card_images["s1"])
+  img_community_card4 = Label(lbframe_community_card4, bg="#35654d", image=card_images["s6"])
+  img_community_card5 = Label(lbframe_community_card5, bg="#35654d", image=card_images["c11"])
+
+  img_community_card1.pack()
+  img_community_card2.pack()
+  img_community_card3.pack()
+  img_community_card4.pack()
+  img_community_card5.pack()
   #Coordinates of each player frame
   coord_list = [(548, 458), (268, 438), (48, 258), (190, 40), (428, 6), (668, 6), (906, 40), (1048, 258), (828, 438)] 
 
@@ -638,7 +670,6 @@ def gui():
   for x, y in coord_list:
     player_gui_list.append(PlayerGUI(room_frame, x, y, img_chips, img_card_back))
 
-  # #35654d poker green
   gui.mainloop()
 
 def main():
