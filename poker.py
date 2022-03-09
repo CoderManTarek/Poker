@@ -558,33 +558,52 @@ class Player:
     return "Player {}".format(self.player_id)
 
 class PlayerGUI:
-  def __init__(self, room_frame, x, y, img_chips, img_card_back):
+  def __init__(self, room_frame, x, y, img_chips, img_card_back, img_buy_in):
     #frame for each player
     player_frame = Frame(room_frame, bg="#505b62", width=104, height=140)
     player_frame.place(x=x, y=y)
 
-    #player frame widgets
     card_one_frame = return_card_frame(player_frame, "gray")
     card_two_frame = return_card_frame(player_frame, "gray")
-    lb_img_card_one = Label(card_one_frame, bg="#505b62", image=img_card_back)
-    lb_img_card_two = Label(card_two_frame, bg="#505b62", image=img_card_back)
-    lb_player_name = Label(player_frame, bg="#505b62", text="Test Player Name", font="Helvetica 10 bold")
-    lb_img_chips = Label(player_frame, bg="#505b62", image=img_chips)
-    lb_player_stack = Label(player_frame, bg="#505b62", text="$200", font="Helvetica 10 bold")
-    lb_player_seat = Label(player_frame, bg="#505b62", text="Seat #")
-    lb_player_action = Label(player_frame, bg="#505b62", text="Action", font="Helvetica 10 bold")
-
-
+    
     card_one_frame.grid(row=0,column=0)
     card_two_frame.grid(row=0,column=1)
-    lb_player_name.grid(row=1, column=0, columnspan=2)
-    lb_img_chips.grid(row=2, column=0)
-    lb_player_stack.grid(row=2, column=1)
-    lb_player_seat.grid(row=3, column=0)
-    lb_player_action.grid(row=3, column=1)
 
-    lb_img_card_one.pack()
-    lb_img_card_two.pack()
+    lb_img_chips = Label(player_frame, bg="#505b62", image=img_chips)
+    lb_img_chips.grid(row=2, column=0)
+
+    #player frame widgets
+    #if player is seated
+    player_is_seated = True
+    if player_is_seated == True:
+      lb_img_card_one = Label(card_one_frame, bg="#505b62", image=img_card_back)
+      lb_img_card_two = Label(card_two_frame, bg="#505b62", image=img_card_back)
+      lb_player_name = Label(player_frame, bg="#505b62", text="Test Player Name", font="Helvetica 10 bold")
+      lb_player_stack = Label(player_frame, bg="#505b62", text="$200", font="Helvetica 10 bold")
+      lb_player_action = Label(player_frame, bg="#505b62", text="Action", font="Helvetica 10 bold")
+
+      lb_player_name.grid(row=1, column=0, columnspan=2)
+      lb_player_stack.grid(row=2, column=1)
+      lb_player_action.grid(row=3, column=1)
+
+      lb_img_card_one.pack()
+      lb_img_card_two.pack()
+    else:
+      #player is not seated, allow buy-in
+      bttn_buy_in = Button(player_frame, image=img_buy_in, borderwidth=0, bg="#505b62", activebackground="#505b62")
+      entry_buy_in = Entry(player_frame, width=6, bg="#505b62")
+      buy_in_min = 10
+      entry_buy_in.insert(0, str(buy_in_min))
+      #add later, if player bank < max buyin, buy_in_max = bank 
+      buy_in_max = 200
+      buy_in_range = "$" + str(buy_in_min) + "-" + "$" + str(buy_in_max)
+      lb_buy_in_range = Label(player_frame, bg="#505b62", text=buy_in_range, font="Helvetica 10 bold")
+      
+      bttn_buy_in.grid(row=1, column=0, columnspan=2)
+      entry_buy_in.grid(row=2, column=1)
+      lb_buy_in_range.grid(row=3, column=1)
+    lb_player_seat = Label(player_frame, bg="#505b62", text="Seat #")
+    lb_player_seat.grid(row=3, column=0)
 
 def initialize_card_images():
   card_images = {}
@@ -614,9 +633,18 @@ def gui():
   gui.resizable(False, False)
 
   #initialize images
+  img_leave_table = PhotoImage(file="img/leave_table.png")
+  img_buy_in = PhotoImage(file="img/buy_in.png")
+  img_cash_out = PhotoImage(file="img/cash_out.png")
   img_chips = PhotoImage(file="img/chips.png")
   img_pot = PhotoImage(file="img/pot.png")
   img_card_back = PhotoImage(file="img/card_back.png")
+  img_fold = PhotoImage(file="img/fold.png")
+  img_check = PhotoImage(file="img/check.png")
+  img_call = PhotoImage(file="img/call.png")
+  img_bet = PhotoImage(file="img/bet.png")
+  img_raise = PhotoImage(file="img/raise.png")
+  img_reraise= PhotoImage(file="img/re-raise.png")
   card_images = initialize_card_images()
 
   #window widgets
@@ -662,13 +690,71 @@ def gui():
   img_community_card3.pack()
   img_community_card4.pack()
   img_community_card5.pack()
+
   #Coordinates of each player frame
   coord_list = [(548, 458), (268, 438), (48, 258), (190, 40), (428, 6), (668, 6), (906, 40), (1048, 258), (828, 438)] 
 
   #Loop to create frame for each player
   player_gui_list = []
   for x, y in coord_list:
-    player_gui_list.append(PlayerGUI(room_frame, x, y, img_chips, img_card_back))
+    player_gui_list.append(PlayerGUI(room_frame, x, y, img_chips, img_card_back, img_buy_in))
+  
+  #Chat frame
+  chat_frame = Frame(gui, bg="#ffffff", width=796, height=196)
+  chat_frame.place(x=2, y=798, anchor="sw")
+
+  #Frame for action buttons
+  action_frame = Frame(gui, width=396, height=196)
+  action_frame.place(x=1198, y=798, anchor="se")
+
+  is_player_turn = False
+  #if player's turn allow action buttons
+  if is_player_turn:
+    action_status = NORMAL
+  #else disable action buttons
+  else:
+    action_status = DISABLED
+
+  bttn_action1 = Button(action_frame, image=img_fold, borderwidth=0, state=action_status)
+
+  table_bet_status = 0
+  #if no bets yet
+  if table_bet_status == 0:
+    action_2 = img_check
+    action_3 = img_bet
+  #if one bet on table
+  if table_bet_status == 1:
+    action_2 = img_call
+    action_3 = img_raise
+  #if someone has raised
+  if table_bet_status == 2:
+    action_2 = img_call
+    action_3 = img_reraise
+
+  bttn_action2 = Button(action_frame, image=action_2, borderwidth=0, state=action_status)
+  bttn_action3 = Button(action_frame, image=action_3, borderwidth=0, state=action_status)
+  entry_bet_amount = Entry(action_frame, width=6)
+  bet_min = 2
+  bet_max = 200
+  entry_bet_amount.insert(0, str(bet_min))
+  bet_range = "$" + str(bet_min) + "-" + "$" + str(bet_max)
+  lb_bet_range = Label(action_frame, text=bet_range, font="Helvetica 10 bold")
+
+  player_is_seated = True
+  #if player is seated
+  if player_is_seated == True:
+    action_4 = img_cash_out
+  #else player is not seated
+  else:
+    action_4 = img_leave_table
+  bttn_action4 = Button(action_frame, image=action_4, borderwidth=0)
+
+  bttn_action1.place(x=100, y=25, anchor="n")
+  bttn_action2.place(x=200, y=25, anchor="n")
+  bttn_action3.place(x=300, y=25, anchor="n")
+  bttn_action4.place(x=200, y=171, anchor="s")
+  entry_bet_amount.place(x=300, y=70, anchor="n")
+  lb_bet_range.place(x=300, y= 100, anchor="n")
 
   gui.mainloop()
 
