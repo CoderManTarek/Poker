@@ -198,7 +198,7 @@ class Table:
 
     # # delete this later (testing hand assign hand rankings function)
     for player in self.players:
-      player.hand.card1 = Card('2', 'diamond',2)
+      player.hand.card1 = Card('8', 'diamond',2)
       player.hand.card2 = Card('3', 'diamond',3)
 
       self.community_cards[0] = Card('A', 'heart', 12)
@@ -323,7 +323,7 @@ class Table:
             return "4 of a kind ({}'s) [{} kicker]".format(card.value, kicker.value)
             #return kicker
     
-    # not done
+    # done
     # check for full house
     trips = ''
     pair = ''
@@ -420,6 +420,31 @@ class Table:
             
 
     # check for 2 pair
+    pair1 = ''
+    pair2 = ''
+
+    # find three of a kind
+    for val in ['A', 'K', 'Q', 'J', '10', '9', '8', '7', '6', '5', '4', '3', '2']:
+      pair_counter = 0
+      for card in all_cards:
+        if (card.value == val):
+          pair_counter += 1
+          if(pair_counter == 2):
+            pair1 = card.value
+    
+    # find pair
+    for val in ['A', 'K', 'Q', 'J', '10', '9', '8', '7', '6', '5', '4', '3', '2']:
+      pair_counter = 0
+      for card in all_cards:
+        if(card.value == pair1):
+          continue
+        if (card.value == val):
+          pair_counter += 1
+          if(pair_counter == 2):
+            pair2 = card.value
+
+    if(pair1 != '' and pair2 != ''):
+      return"Two Pair {}'s and {}'s".format(pair1, pair2)
 
     # done
     # check for pair
