@@ -558,19 +558,21 @@ class Player:
     return "Player {}".format(self.player_id)
 
 class PlayerGUI:
-  def __init__(self, room_frame, x, y, img_chips):
+  def __init__(self, room_frame, x, y, img_chips, img_card_back):
     #frame for each player
     player_frame = Frame(room_frame, bg="#505b62", width=104, height=140)
     player_frame.place(x=x, y=y)
 
     #player frame widgets
-    card_one_frame= LabelFrame(player_frame, bg="#505b62", width=50, height=70, borderwidth=2, relief="groove")
-    card_two_frame= LabelFrame(player_frame, bg="#505b62", width=50, height=70, borderwidth=2, relief="groove")
+    card_one_frame = LabelFrame(player_frame, bg="#505b62", width=50, height=68, borderwidth=2, relief="groove")
+    card_two_frame = LabelFrame(player_frame, bg="#505b62", width=50, height=68, borderwidth=2, relief="groove")
+    lb_img_card_one = Label(card_one_frame, bg="#505b62", image=img_card_back)
+    lb_img_card_two = Label(card_two_frame, bg="#505b62", image=img_card_back)
     lb_player_name = Label(player_frame, bg="#505b62", text="Test Player Name", font="Helvetica 10 bold")
     lb_img_chips = Label(player_frame, bg="#505b62", image=img_chips)
     lb_player_stack = Label(player_frame, bg="#505b62", text="$200", font="Helvetica 10 bold")
     lb_player_seat = Label(player_frame, bg="#505b62", text="Seat #")
-    lb_player_action = Label(player_frame, bg="#505b62", text="Action text", font="Helvetica 10 bold")
+    lb_player_action = Label(player_frame, bg="#505b62", text="Action", font="Helvetica 10 bold")
 
 
     card_one_frame.grid(row=0,column=0)
@@ -580,6 +582,20 @@ class PlayerGUI:
     lb_player_stack.grid(row=2, column=1)
     lb_player_seat.grid(row=3, column=0)
     lb_player_action.grid(row=3, column=1)
+
+    lb_img_card_one.pack()
+    lb_img_card_two.pack()
+
+def initialize_card_images():
+  card_images = {}
+  suits = ("h", "d", "c", "s")
+  for suit in suits:
+    for n in range(1,14):
+      card_name = suit+str(n)
+      file_string = "img/cards/" + card_name + ".png"
+      card_images[card_name] = PhotoImage(file=file_string)
+  return card_images
+
 
 def gui():
   #GUI window
@@ -593,29 +609,34 @@ def gui():
   #initialize images
   img_chips = PhotoImage(file="img/chips.png")
   img_pot = PhotoImage(file="img/pot.png")
+  img_card_back = PhotoImage(file="img/card_back.png")
+  card_images = initialize_card_images()
   #window widgets
   #room frame
   room_frame = Frame(gui, bg="#505b62", width=1200, height=600)
-  room_frame.pack(padx=5, pady=5)
+  room_frame.pack()
 
   #table frame
   table_frame = Canvas(room_frame, bg="#505b62", width=800, height=300, highlightthickness=0)
   table_frame.create_oval(0, 0, 800, 300, outline = "#65354d", fill = "#35654d",width = 2)
-  table_frame.place(relx=0.5, rely=0.5, anchor="center")
+  table_frame.place(relx=0.5, rely=0.5, anchor="c")
 
   lb_img_pot = Label(table_frame, bg="#35654d", image=img_pot)
   lb_pot = Label(table_frame, bg="#35654d", text="$1000", font="Helvetica 16 bold")
 
-  lb_img_pot.place(x=375, y=100)
-  lb_pot.place(x=375, y=160)
+  lb_img_pot.place(x=375, y=25)
+  lb_pot.place(x=375, y=85)
+
+  # lb_community_card_1 = Label(table_frame, bg="#35654d", image=card_images["h12"])
+  # lb_community_card_1.place(x=400, y=150)
 
   #Coordinates of each player frame
-  coord_list = [(548, 458), (278, 438), (48, 258), (200, 50), (428, 6), (668, 6), (896, 50), (1048, 258), (818, 438)] 
+  coord_list = [(548, 458), (268, 438), (48, 258), (190, 40), (428, 6), (668, 6), (906, 40), (1048, 258), (828, 438)] 
 
   #Loop to create frame for each player
   player_gui_list = []
   for x, y in coord_list:
-    player_gui_list.append(PlayerGUI(room_frame, x, y, img_chips))
+    player_gui_list.append(PlayerGUI(room_frame, x, y, img_chips, img_card_back))
 
   # #35654d poker green
   gui.mainloop()
