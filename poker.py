@@ -59,6 +59,7 @@ class Server:
     self.players = []
     self.deck = Deck()
     self.table = Table(self.deck, 9, self.players)
+    self.started = False
 
     # table.deal()
 
@@ -323,7 +324,7 @@ class Server:
       #############if we are joining a table#############
       loggedIn=False
       if(tokens[0] == "join"):
-        buy_in = tokens[1]
+        buy_in = int(tokens[1])
         #check if sender is logged in
         for connectioniterator in self.activePlayersAndAddresses:
           if(connectioniterator[1] == str(a[0])):
@@ -358,6 +359,10 @@ class Server:
                 print("table is full")
         for j in self.table.players:
           print("{} [Stack: {}] (Seat: {})".format(j.player_id, j.stack, j.seat_number))
+        # start game condition
+        if(len(self.table.players)>1 and self.started == False):
+          self.started = True
+          self.table.deal()
 
 
 
@@ -431,8 +436,7 @@ class Client:
         self.table = Table(self.deck, 9, self.players)
         print("table joined")
 
-        # load this player into table
-        # load external players data into table
+        # load this player and external players data into table
 
         for c in tokens[1]:
           if(c == '('):
@@ -446,7 +450,7 @@ class Client:
         for c in message:
           if(c == ')'):
             check = 0
-            self.players.append(Player(temp_player_id, temp_player_seat, temp_stack, None))
+            self.players.append(Player(temp_player_id, int(temp_player_seat), int(temp_stack), None))
             temp_player_id = ""
             temp_stack = ""
             temp_player_seat = 0
@@ -1345,22 +1349,22 @@ def gui():
   gui.mainloop()
 
 def main():
-  # #instantiate server
-  # if (len(sys.argv)>1):
-  #   client = Client(sys.argv[1])
-  #   gui()
-  # #instantiate client
-  # else:
-  #   server = Server()
-  #   server.run()
+  #instantiate server
+  if (len(sys.argv)>1):
+    client = Client(sys.argv[1])
+    gui()
+  #instantiate client
+  else:
+    server = Server()
+    server.run()
 
 
   # players = []
 
   #instantiate players
-  for i in range(9):
-    x = Player(i+1, i+1, 200)
-    players.append(x)
+  # for i in range(9):
+  #   x = Player(i+1, i+1, 200)
+  #   players.append(x)
 
 
   # # instantiate deck and table
