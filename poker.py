@@ -337,11 +337,22 @@ class Server:
                 seat_num = len(self.table.players)+1
                 player = Player(plyr_id, seat_num, buy_in, None)
                 self.table.players.append(player)
-                # find client that sent this packet and respond 
+                # send table.players [] data to connections that are on the table
+
+
+
+                # send to all users that are logged in and on table
                 for connection in self.connections:
-                  if(connection.getpeername()[0] == str(a[0])):
-                    if(connection.getpeername()[1] == a[1]):
-                        connection.send(bytes("joined", 'utf-8'))
+                  for x in self.activePlayersAndAddresses:
+                    if(x[1]==connection.getpeername()[0]):
+                      if(x[2]==connection.getpeername()[1]):
+                        for p in self.table.players:
+                          if(p.player_id == x[0]):
+                            player_list = ""
+                            for k in self.table.players:
+                              player_list += Player.__str__(k)
+                            connection.send(bytes("joined {}{}".format(player.player_id, player_list), 'utf-8'))
+
               else:
                 print("table is full")
         for j in self.table.players:
@@ -371,6 +382,10 @@ class Client:
   def sendMsg(self):
     while True:
       self.sock.send(bytes(input(""), 'utf-8'))
+      self.this_player = ""
+      self.table = None
+      self.deck = None
+      self.players = None
 
   #instantiate thread
   def __init__(self, address):
@@ -394,18 +409,80 @@ class Client:
         break
       print(str(data, 'utf-8'))
 
+      message = str(data, 'utf-8')
+      tokens = message.split(' ')
+
+      # format message
+      formattedMessage = ""
+      x = 0
+      for i in tokens:
+        if(x!=0 and x!=1):
+          formattedMessage+=i+' '
+        x+=1
+
+
       # if a table has been joined successfully
-      if(str(data, 'utf-8') == "joined"):
+      if(tokens[0] == "joined"):
 
         # create a table
-        players = []
-        deck = Deck()
-        table = Table(deck, 9, players)
+        self.players = []
+        self.deck = Deck()
+        self.table = Table(self.deck, 9, self.players)
         print("table joined")
 
         # load this player into table
         # load external players data into table
 
+        for c in tokens[1]:
+          if(c == '('):
+            break
+          else:
+            self.this_player+= c
+        check = 0
+        temp_player_id = ""
+        temp_stack = ""
+        temp_player_seat = 0
+        for c in message:
+          if(c == ')'):
+            check = 0
+            self.players.append(Player(temp_player_id, temp_player_seat, temp_stack, None))
+            temp_player_id = ""
+            temp_stack = ""
+            temp_player_seat = 0
+            continue
+          if(c == '('):
+            check = 1
+            continue
+          if(c == ' '):
+            continue
+          if(c == ',' and check == 1):
+            check = 2
+            continue
+          if(c == ',' and check == 3):
+            check = 4
+            continue
+          if(c == ',' and check == 4):
+            check = 5
+          if(check == 1):
+            temp_player_id += c
+          if(check == 2):
+            temp_player_seat = c
+            check = 3
+            continue
+          if(check == 4):
+            temp_stack += c
+          if(check == 5):
+            continue
+        
+        #print("{}\n{}\n{}".format(temp_player_id, temp_player_seat, temp_stack))
+
+        #self.table.players.append(Player(temp_player_id, int(temp_player_seat), 200, None))
+        for p in self.players:
+          print(p)
+          
+
+          
+          
 
 class Card:
   #constructor
@@ -1003,7 +1080,7 @@ class Player:
     return amount
   
   def __str__(self):
-    return "Player {}".format(self.player_id)
+    return "({}, {}, {}, {})".format(self.player_id, self.seat_number, self.stack, self.hand)
 
 class PlayerGUI:
   def __init__(self, room_frame, x, y, img_chips, img_card_back, img_buy_in):
