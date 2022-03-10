@@ -6,6 +6,7 @@ import os
 import sys
 import socket
 import threading
+from turtle import width
 
 #class object
 class Server:
@@ -1131,6 +1132,10 @@ class PlayerGUI:
     lb_player_seat = Label(player_frame, bg="#505b62", text="Seat #")
     lb_player_seat.grid(row=3, column=0)
 
+class Assets:
+  #def __init__(self):
+  pass
+
 def initialize_card_images():
   card_images = {}
   suits = ("h", "d", "c", "s")
@@ -1151,43 +1156,34 @@ def return_card_frame(parent, color):
   card_frame = LabelFrame(parent, bg=bg, width=50, height=68, borderwidth=2, relief="groove")
   return card_frame
 
-def gui():
-  #GUI window
-  gui = Tk()
-  canvas = Canvas()
-  gui.title("Poker App")
-  gui.config(bg="#D3D3D3")
-  gui.geometry("1200x800")
-  gui.resizable(False, False)
-  gui.iconbitmap("img/app_icon.ico")
+def clear_frame(frame):
+  for widget in frame.winfo_children():
+    widget.destroy()
 
-  #initialize images
-  img_leave_table = PhotoImage(file="img/leave_table.png")
-  img_buy_in = PhotoImage(file="img/buy_in.png")
-  img_cash_out = PhotoImage(file="img/cash_out.png")
-  img_chips = PhotoImage(file="img/chips.png")
-  img_pot = PhotoImage(file="img/pot.png")
-  img_card_back = PhotoImage(file="img/card_back.png")
-  img_fold = PhotoImage(file="img/fold.png")
-  img_check = PhotoImage(file="img/check.png")
-  img_call = PhotoImage(file="img/call.png")
-  img_bet = PhotoImage(file="img/bet.png")
-  img_raise = PhotoImage(file="img/raise.png")
-  img_reraise= PhotoImage(file="img/re-raise.png")
-  card_images = initialize_card_images()
+def validate_log_in(username, password, top_frame, Images):
+  create_dashboard_view(top_frame, Images)
 
-  #window widgets
+def create_dashboard_view(top_frame, Images):
+  clear_frame(top_frame)
+  top_frame.config(bg="#ffffff")
+  #Label(top_frame, bg="#35654d", text="Poker App", font="Helvetica 32 bold").pack()
+  bttn_join_table = Button(top_frame, image=Images.join_table, command=lambda:create_table_view(top_frame, Images))
+  bttn_join_table.place(relx=0.5, rely=0.5, anchor="c")
 
+def create_table_view(top_frame, Images):
+  clear_frame(top_frame)
+   #window widgets
+  top_frame.config(bg="")
   #room frame
-  room_frame = Frame(gui, bg="#505b62", width=1200, height=600)
-  room_frame.pack()
+  room_frame = Frame(top_frame, bg="#505b62", width=1200, height=600)
+  room_frame.place(x=0, y=0, anchor="nw")
 
   #table frame
   table_frame = Canvas(room_frame, bg="#505b62", width=800, height=300, highlightthickness=0)
   table_frame.create_oval(0, 0, 800, 300, outline = "#65354d", fill = "#35654d",width = 2)
   table_frame.place(relx=0.5, rely=0.5, anchor="c")
 
-  lb_img_pot = Label(table_frame, bg="#35654d", image=img_pot)
+  lb_img_pot = Label(table_frame, bg="#35654d", image=Images.pot)
   lb_pot = Label(table_frame, bg="#35654d", text="$1000", font="Helvetica 16 bold")
 
   lb_img_pot.place(x=400, y=80, anchor="c")
@@ -1209,11 +1205,11 @@ def gui():
   lbframe_community_card4.grid(row=0, column=3)
   lbframe_community_card5.grid(row=0, column=4)
 
-  img_community_card1 = Label(lbframe_community_card1, bg="#35654d", image=card_images["d3"])
-  img_community_card2 = Label(lbframe_community_card2, bg="#35654d", image=card_images["h13"])
-  img_community_card3 = Label(lbframe_community_card3, bg="#35654d", image=card_images["s1"])
-  img_community_card4 = Label(lbframe_community_card4, bg="#35654d", image=card_images["s6"])
-  img_community_card5 = Label(lbframe_community_card5, bg="#35654d", image=card_images["c11"])
+  img_community_card1 = Label(lbframe_community_card1, bg="#35654d", image=Images.card_images["d3"])
+  img_community_card2 = Label(lbframe_community_card2, bg="#35654d", image=Images.card_images["h13"])
+  img_community_card3 = Label(lbframe_community_card3, bg="#35654d", image=Images.card_images["s1"])
+  img_community_card4 = Label(lbframe_community_card4, bg="#35654d", image=Images.card_images["s6"])
+  img_community_card5 = Label(lbframe_community_card5, bg="#35654d", image=Images.card_images["c11"])
 
   img_community_card1.pack()
   img_community_card2.pack()
@@ -1227,14 +1223,14 @@ def gui():
   #Loop to create frame for each player
   player_gui_list = []
   for x, y in coord_list:
-    player_gui_list.append(PlayerGUI(room_frame, x, y, img_chips, img_card_back, img_buy_in))
+    player_gui_list.append(PlayerGUI(room_frame, x, y, Images.chips, Images.card_back, Images.buy_in))
   
   #Chat frame
-  chat_frame = Frame(gui, bg="#ffffff", width=796, height=196)
+  chat_frame = Frame(top_frame, bg="#ffffff", width=796, height=196)
   chat_frame.place(x=2, y=798, anchor="sw")
 
   #Frame for action buttons
-  action_frame = Frame(gui, width=396, height=196)
+  action_frame = Frame(top_frame, width=396, height=196)
   action_frame.place(x=1198, y=798, anchor="se")
 
   is_player_turn = False
@@ -1245,21 +1241,21 @@ def gui():
   else:
     action_status = DISABLED
 
-  bttn_action1 = Button(action_frame, image=img_fold, borderwidth=0, state=action_status)
+  bttn_action1 = Button(action_frame, image=Images.fold, borderwidth=0, state=action_status)
 
   table_bet_status = 0
   #if no bets yet: show check/bet buttons
   if table_bet_status == 0:
-    action_2 = img_check
-    action_3 = img_bet
+    action_2 = Images.check
+    action_3 = Images.bet
   #if one bet on table: raise instead of bet button
   if table_bet_status == 1:
-    action_2 = img_call
-    action_3 = img_raise
+    action_2 = Images.call
+    action_3 = Images.raise_img
   #if someone has raised: re-raise button instead of raise
   if table_bet_status == 2:
-    action_2 = img_call
-    action_3 = img_reraise
+    action_2 = Images.call
+    action_3 = Images.reraise
 
   bttn_action2 = Button(action_frame, image=action_2, borderwidth=0, state=action_status)
   bttn_action3 = Button(action_frame, image=action_3, borderwidth=0, state=action_status)
@@ -1275,10 +1271,10 @@ def gui():
   player_is_seated = True
   #if player is seated: show cash out button
   if player_is_seated == True:
-    action_4 = img_cash_out
+    action_4 = Images.cash_out
   #else player is not seated: show leave table button
   else:
-    action_4 = img_leave_table
+    action_4 = Images.leave_table
   bttn_action4 = Button(action_frame, image=action_4, borderwidth=0)
 
   bttn_action1.place(x=100, y=25, anchor="n")
@@ -1288,25 +1284,83 @@ def gui():
   entry_bet_amount.place(x=300, y=70, anchor="n")
   lb_bet_range.place(x=300, y= 100, anchor="n")
 
+def gui():
+  #GUI window
+  gui = Tk()
+  canvas = Canvas()
+  gui.title("Poker App")
+  gui.config(bg="#D3D3D3")
+  gui.geometry("1200x800")
+  gui.resizable(False, False)
+  gui.iconbitmap("img/app_icon.ico")
+
+  top_frame = Frame(gui, width=1200, height=800)
+  top_frame.pack()
+  print(top_frame.cget("bg"))
+  #initialize images
+  Images = Assets()
+  Images.register = PhotoImage(file="img/register.png")
+  Images.log_in = PhotoImage(file="img/log_in.png")
+  Images.join_table = PhotoImage(file="img/join_table.png")
+
+  Images.leave_table = PhotoImage(file="img/leave_table.png")
+  Images.buy_in = PhotoImage(file="img/buy_in.png")
+  Images.cash_out = PhotoImage(file="img/cash_out.png")
+  Images.chips = PhotoImage(file="img/chips.png")
+  Images.pot = PhotoImage(file="img/pot.png")
+  Images.card_back = PhotoImage(file="img/card_back.png")
+  Images.fold = PhotoImage(file="img/fold.png")
+  Images.check = PhotoImage(file="img/check.png")
+  Images.call = PhotoImage(file="img/call.png")
+  Images.bet = PhotoImage(file="img/bet.png")
+  Images.raise_img = PhotoImage(file="img/raise.png")
+  Images.reraise= PhotoImage(file="img/re-raise.png")
+  Images.card_images = initialize_card_images()
+  
+  top_frame.config(bg = "#35654d")
+
+  #log-in frame
+  login_frame = Frame(top_frame, width=400, height=600, bg = "#35654d")
+  login_frame.place(relx=0.5, rely=0.5, anchor="c")
+
+  lbframe_app_name = LabelFrame(login_frame, bg="#35654d", relief="groove")
+  lb_app_name = Label(lbframe_app_name, bg="#35654d", text="Poker App", font="Helvetica 32 bold")
+  lb_username = Label(login_frame, bg="#35654d", text="Username:", font="Helvetica 16 bold")
+  #ADD validation
+  entry_username = Entry(login_frame, width=20)
+  lb_password = Label(login_frame, bg="#35654d", text="Password:", font="Helvetica 16 bold")
+  entry_password = Entry(login_frame, width=20)
+  bttn_register = Button(login_frame, image=Images.register, borderwidth=0, bg="#35654d", activebackground="#35654d")
+  bttn_log_in = Button(login_frame, image=Images.log_in, borderwidth=0, bg="#35654d", activebackground="#35654d", command=lambda:validate_log_in(entry_username.get(), entry_password.get(), top_frame, Images))
+
+  lbframe_app_name.grid(row=0, column=0, columnspan=2, pady=32)
+  lb_app_name.pack(anchor="c", padx=10, pady=10)
+  lb_username.grid(row=1, column=0, columnspan=2, pady=5)
+  entry_username.grid(row=2, column=0, columnspan=2, pady=5)
+  lb_password.grid(row=3, column=0, columnspan=2, pady=5)
+  entry_password.grid(row=4, column=0, columnspan=2, pady=5)
+  bttn_register.grid(row=5, column=0, padx=15, pady=15)
+  bttn_log_in.grid(row=5, column=1, padx=15, pady=15)
+
   gui.mainloop()
 
 def main():
-  #instantiate server
-  if (len(sys.argv)>1):
-    client = Client(sys.argv[1])
-    
-  #instantiate client
-  else:
-    server = Server()
-    server.run()
+  # #instantiate server
+  # if (len(sys.argv)>1):
+  #   client = Client(sys.argv[1])
+  #   gui()
+  # #instantiate client
+  # else:
+  #   server = Server()
+  #   server.run()
 
 
   # players = []
 
-  # #instantiate players
-  # for i in range(9):
-  #   x = Player(i+1, i+1, 200)
-  #   players.append(x)
+  #instantiate players
+  for i in range(9):
+    x = Player(i+1, i+1, 200)
+    players.append(x)
 
 
   # # instantiate deck and table
