@@ -1,1 +1,2 @@
-(Tarek, Tarek22)
+(admin, admin, 99999999)
+(Tarek, Tarek22, 10000)
