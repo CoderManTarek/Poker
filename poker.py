@@ -337,10 +337,15 @@ class Server:
                 seat_num = len(self.table.players)+1
                 player = Player(plyr_id, seat_num, buy_in, None)
                 self.table.players.append(player)
-                for j in self.table.players:
-                  print("{} [Stack: {}] (Seat: {})".format(j.player_id, j.stack, j.seat_number))
+                # find client that sent this packet and respond 
+                for connection in self.connections:
+                  if(connection.getpeername()[0] == str(a[0])):
+                    if(connection.getpeername()[1] == a[1]):
+                        connection.send(bytes("joined", 'utf-8'))
               else:
                 print("table is full")
+        for j in self.table.players:
+          print("{} [Stack: {}] (Seat: {})".format(j.player_id, j.stack, j.seat_number))
 
 
 
@@ -388,6 +393,19 @@ class Client:
       if not data:
         break
       print(str(data, 'utf-8'))
+
+      # if a table has been joined successfully
+      if(str(data, 'utf-8') == "joined"):
+
+        # create a table
+        players = []
+        deck = Deck()
+        table = Table(deck, 9, players)
+        print("table joined")
+
+        # load this player into table
+        # load external players data into table
+
 
 class Card:
   #constructor
