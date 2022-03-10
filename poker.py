@@ -12,8 +12,8 @@ from turtle import width
 class Server:
   
   # server program data
-  usernamesAndPasswords = []
-  activeUsernamesAndAddresses = []
+  usernames_passwords_bankrolls = []
+  activePlayersAndAddresses = []
   sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
   connections = []
 
@@ -26,6 +26,7 @@ class Server:
     check = 0
     tempUser = ''
     tempPassword = ''
+    tempBankroll = ''
 
     #parsing and formatting logic to store file data
     for string in fileData:
@@ -33,6 +34,9 @@ class Server:
         if(character == ')'):
           check = 0
           break
+        if(character == ' ' and check == 2):
+          check = 3
+          continue
         if(character == ' '):
           check = 2
           continue
@@ -42,11 +46,14 @@ class Server:
           tempUser += character
         if(check == 2):
           tempPassword += character
+        if(check == 3):
+          tempBankroll += character
         if(character == '('):
           check = 1
-      self.usernamesAndPasswords.append((tempUser, tempPassword))
+      self.usernames_passwords_bankrolls.append((tempUser, tempPassword, int(tempBankroll)))
       tempUser = ''
       tempPassword = ''
+      tempBankroll = ''
 
     # build table
     self.players = []
@@ -99,7 +106,7 @@ class Server:
       if(tokens[0]=="logout"):
 
         #is this account logged in
-        for j in self.activeUsernamesAndAddresses:
+        for j in self.activePlayersAndAddresses:
           if(j[1]==str(a[0])):
             if(j[2]==a[1]):
               userlogincheck=True
@@ -108,7 +115,7 @@ class Server:
               #respond to all clients with logout message
               for connection in self.connections:
                 connection.send(bytes((j[0]+" left"), 'utf-8'))
-              self.activeUsernamesAndAddresses.remove(j)
+              self.activePlayersAndAddresses.remove(j)
         if(userlogincheck == False):
           print("You are not logged in")
 
@@ -122,7 +129,7 @@ class Server:
         checker = 0
 
         #check if sender is logged in
-        for connectioniterator in self.activeUsernamesAndAddresses:
+        for connectioniterator in self.activePlayersAndAddresses:
           if(connectioniterator[1] == str(a[0])):
             if(connectioniterator[2] == a[1]):
               checkuserlogin=True
@@ -137,7 +144,7 @@ class Server:
         if(tokencheck == True):
 
           # if this username is not already in use in the usernames and passwords list of tuples
-          for userAndPass in self.usernamesAndPasswords:
+          for userAndPass in self.usernames_passwords_bankrolls:
             if(userAndPass[0] == tokens[1]):
               checker = 1
 
@@ -151,9 +158,9 @@ class Server:
           if(len(tokens) > 2):
             newUsername = tokens[1]
             newPassword = tokens[2]
-            self.usernamesAndPasswords.append((newUsername, newPassword))
+            self.usernames_passwords_bankrolls.append((newUsername, newPassword, 10000))
             file = open("users.txt", "a")
-            file.write('\n'+'('+newUsername+','+' ' + newPassword + ')')
+            file.write('\n'+'('+newUsername+','+' ' + newPassword + ','+' '+ '10000'+')')
             file.close()
 
             # find client that sent this packet and respond 
@@ -196,7 +203,7 @@ class Server:
 
         if(tokenschecker==True):
           #check if sender is logged in
-          for connectioniterator in self.activeUsernamesAndAddresses:
+          for connectioniterator in self.activePlayersAndAddresses:
             #print(connectioniterator[1],str(a[0]),connectioniterator[2],a[1])
             if(connectioniterator[0]==tokens[1]):
               checklogin = True
@@ -207,12 +214,12 @@ class Server:
                 break
 
         #login
-        for users in self.usernamesAndPasswords:
+        for users in self.usernames_passwords_bankrolls:
           if(checklogin==True or tokenschecker==False):
             break
           if(tokens[1] == users[0]):
             if(tokens[2] == users[1]):
-              self.activeUsernamesAndAddresses.append((tokens[1], str(a[0]), a[1]))
+              self.activePlayersAndAddresses.append((tokens[1], str(a[0]), a[1]))
               
               # find client that sent this packet and respond 
               for connection in self.connections:
@@ -240,7 +247,7 @@ class Server:
       if(tokens[0] == "send"):
 
         #check if sender is logged in
-        for connectioniterator in self.activeUsernamesAndAddresses:
+        for connectioniterator in self.activePlayersAndAddresses:
           if(connectioniterator[1] == str(a[0])):
             if(connectioniterator[2] == a[1]):
               senderName = connectioniterator[0]
@@ -254,13 +261,13 @@ class Server:
                   # send to all users that are logged in
                   print(senderName + ": " + formattedMessage)
                   for connection in self.connections:
-                    for x in self.activeUsernamesAndAddresses:
+                    for x in self.activePlayersAndAddresses:
                       if(x[1]==connection.getpeername()[0]):
                         if(x[2]==connection.getpeername()[1]):              
                           connection.send(bytes((senderName + ": " + formattedMessage), 'utf-8'))
                 else:
                   #check to see if user is online
-                  for tmp in self.activeUsernamesAndAddresses:
+                  for tmp in self.activePlayersAndAddresses:
                     if(tokens[1]==tmp[0]):
 
                       #send direct message to specified user
@@ -301,17 +308,48 @@ class Server:
       if(tokens[0] == "who"):
 
         #check if sender is logged in
-        for connectioniterator in self.activeUsernamesAndAddresses:
+        for connectioniterator in self.activePlayersAndAddresses:
           if(connectioniterator[1] == str(a[0])):
             if(connectioniterator[2] == a[1]):
               loggedIn=True
-              for temp in self.activeUsernamesAndAddresses:
+              for temp in self.activePlayersAndAddresses:
                 serverList+=temp[0] + ", "
               # find client that sent this packet and respond 
               for connection in self.connections:
                 if(connection.getpeername()[0] == str(a[0])):
                   if(connection.getpeername()[1] == a[1]):
                       connection.send(bytes(serverList[:-2], 'utf-8'))
+      
+      #############if we are joining a table#############
+      loggedIn=False
+      if(tokens[0] == "join"):
+        buy_in = tokens[1]
+        #check if sender is logged in
+        for connectioniterator in self.activePlayersAndAddresses:
+          if(connectioniterator[1] == str(a[0])):
+            if(connectioniterator[2] == a[1]):
+              loggedIn=True
+
+              #if the table is not full
+              if(len(self.table.players)<9):
+
+                #create a new player and append to table list
+                plyr_id = connectioniterator[0]
+                seat_num = len(self.table.players)+1
+                player = Player(plyr_id, seat_num, buy_in, None)
+                self.table.players.append(player)
+                # find client that sent this packet and respond 
+                for connection in self.connections:
+                  if(connection.getpeername()[0] == str(a[0])):
+                    if(connection.getpeername()[1] == a[1]):
+                        connection.send(bytes("joined", 'utf-8'))
+              else:
+                print("table is full")
+        for j in self.table.players:
+          print("{} [Stack: {}] (Seat: {})".format(j.player_id, j.stack, j.seat_number))
+
+
+
 
   #infinitely looping run scope that utilizes threads and our handeler function to accept new connections
   def run(self):
@@ -322,9 +360,9 @@ class Server:
       cThread.start()
       self.connections.append(c)
       print(str(a[0])+ ':' + str(a[1]) +  " connected")
-      self.table.players.append(Player(1, 1, 200, None))
-      for player in self.table.players:
-        print("Player {}[Stack {}]: {}".format(player.player_id, player.stack, player.hand))
+      #self.table.players.append(Player(1, 1, 200, None))
+      #for player in self.table.players:
+      #  print("Player {}[Stack {}]: {}".format(player.player_id, player.stack, player.hand))
 
 #client object
 class Client:
@@ -356,6 +394,19 @@ class Client:
       if not data:
         break
       print(str(data, 'utf-8'))
+
+      # if a table has been joined successfully
+      if(str(data, 'utf-8') == "joined"):
+
+        # create a table
+        players = []
+        deck = Deck()
+        table = Table(deck, 9, players)
+        print("table joined")
+
+        # load this player into table
+        # load external players data into table
+
 
 class Card:
   #constructor
@@ -1227,7 +1278,7 @@ def main():
   #   server.run()
 
 
-  players = []
+  # players = []
 
   #instantiate players
   for i in range(9):
@@ -1235,12 +1286,12 @@ def main():
     players.append(x)
 
 
-  # instantiate deck and table
-  deck = Deck()
-  table = Table(deck, 9, players)
+  # # instantiate deck and table
+  # deck = Deck()
+  # table = Table(deck, 9, players)
 
-  #test shuffle
-  table.deal()
+  # #test shuffle
+  # table.deal()
 
 
 
