@@ -1056,7 +1056,6 @@ class PlayerGUI:
     lb_player_seat.grid(row=3, column=0)
 
 class Assets:
-  #def __init__(self):
   pass
 
 def initialize_card_images():
