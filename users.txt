@@ -1,2 +1,3 @@
 (admin, admin, 99999999)
 (Tarek, Tarek22, 10000)
+(Stephen, Steve33, 10000)
