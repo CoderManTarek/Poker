@@ -1177,16 +1177,116 @@ def clear_frame(frame):
   for widget in frame.winfo_children():
     widget.destroy()
 
-def validate_log_in(username, password, top_frame, Images):
-  #ADD username/password validation
-  key, salt = retrieve_login_info(username)
+def validate_username(username):
+
+    # Validate username length
+    len_username = len(username)
+    if len_username < 4 or len_username > 32:
+      return "length"
+
+    # Validate username characters
+    if not username.isalnum():
+      return "alphanumeric"
+
+    # Validated username
+    else: 
+      return "validated"
+
+def validate_password(password):
+
+  # Validate password length
+  len_password = len(password)
+  if len_password < 8 or len_password > 32:
+    return "length"
+  
+  # Validate password characters
+  accepted_special_characters = ["@", "%", "+", "/", "'", "!", "#", "$", "^", "?", ":", ",", ")", "(", "{", "}", "[", "]", "`", "-", "_", "."]
+  # Remove any accepted special characters from password
+  temp_password = password
+  for char in accepted_special_characters:
+    temp_password = temp_password.replace(char, "")
+  # Check if resulting password is alphanumeric
+  if not temp_password.isalnum():
+    return "character"
+  
+  # Validated password
+  else:
+    return "validated"
+
+def authenticate_password(username, password):
+
+  # Retrieve stored key and salt from database
+  login_info = retrieve_login_info(username)
+
+  # If None returned, there is no user with that username in the database
+  if login_info == None:
+    return "nouser"
+
+  key, salt = login_info
   key = bytes(key)
 
+  # Generate new key based on submitted password
   new_key = hashlib.pbkdf2_hmac('sha256', password.encode('utf-8'), salt, 100000, dklen=128)
 
   if new_key == key:
+    return "authenticated"
+  else:
+    return "wrong"
 
-    create_dashboard_view(top_frame, Images)
+def set_login_error(lb_error_alert, entry_type, error_type):
+
+  if entry_type == "username":
+    if error_type == 'length':
+      error_text = "Username must be between 4 and 32 characters"
+    if error_type == 'alphanumeric':
+      error_text = "Username must be alphanumeric"
+
+  if entry_type == "password":
+    if error_type == 'length':
+      error_text = "Password must be between 8 and 32 characters"
+    if error_type == 'character':
+      error_text = "Password must only use letters, numbers, and certain special characters"
+
+  if entry_type == "authentication":
+    if error_type == "nouser":
+      error_text = "There is no user with that username"
+    if error_type == "wrong":
+      error_text = "Incorrect password"
+
+  #set error label text and place on grid
+  lb_error_alert.config(text = error_text)
+  lb_error_alert.grid(row=6, column=0, columnspan=2, padx=15, pady=15, ipadx=3, ipady=3)
+
+def check_login(username, password, top_frame, lb_error_alert, Images):
+
+  username_error = validate_username(username)
+  if username_error == "validated":
+
+    #Remove any previous error label due to username validation failure
+    lb_error_alert.grid_forget()
+
+    #Validate submitted password
+    password_error = validate_password(password)
+    if password_error == "validated":
+      
+      #Remove any previous error label due to password validation failure
+      lb_error_alert.grid_forget()
+
+      authentication_error = authenticate_password(username, password)
+      if authentication_error == "authenticated":
+        create_dashboard_view(top_frame, Images)
+      
+      # Authentication failed
+      else:
+        set_login_error(lb_error_alert, "authentication", authentication_error)
+
+    # Password failed validation
+    else:
+      set_login_error(lb_error_alert, "password", password_error)
+
+  # Username failed validation
+  else:
+    set_login_error(lb_error_alert, "username", username_error)
 
 def retrieve_login_info(username):
   conn = None
@@ -1346,12 +1446,12 @@ def gui():
 
   top_frame = Frame(gui, width=1200, height=800)
   top_frame.pack()
+
   #initialize images
   Images = Assets()
   Images.register = PhotoImage(file="img/register.png")
   Images.log_in = PhotoImage(file="img/log_in.png")
   Images.join_table = PhotoImage(file="img/join_table.png")
-
   Images.leave_table = PhotoImage(file="img/leave_table.png")
   Images.buy_in = PhotoImage(file="img/buy_in.png")
   Images.cash_out = PhotoImage(file="img/cash_out.png")
@@ -1380,8 +1480,9 @@ def gui():
   lb_password = Label(login_frame, bg="#35654d", text="Password:", font="Helvetica 16 bold")
   entry_password = Entry(login_frame, width=20)
   bttn_register = Button(login_frame, image=Images.register, borderwidth=0, bg="#35654d", activebackground="#35654d")
-  bttn_log_in = Button(login_frame, image=Images.log_in, borderwidth=0, bg="#35654d", activebackground="#35654d", command=lambda:validate_log_in(entry_username.get(), entry_password.get(), top_frame, Images))
-
+  bttn_log_in = Button(login_frame, image=Images.log_in, borderwidth=0, bg="#35654d", activebackground="#35654d", command=lambda:check_login(entry_username.get(), entry_password.get(), top_frame, lb_error_alert, Images))
+  lb_error_alert = Label(login_frame, bg="#E69394", font="Helvetica 12 bold", fg="#8E282A")
+  
   lbframe_app_name.grid(row=0, column=0, columnspan=2, pady=32)
   lb_app_name.pack(anchor="c", padx=10, pady=10)
   lb_username.grid(row=1, column=0, columnspan=2, pady=5)

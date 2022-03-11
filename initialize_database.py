@@ -4,7 +4,7 @@ from sqlite3 import paramstyle
 import psycopg2
 from configparser import ConfigParser
 
-######### To use: change password in create_database() function and database.ini, may need to rerun after connecting new database_poker
+######### To use: change password in create_database() function and database.ini, may need to rerun as database_poker may be disconnected
 
 def config(filename='database.ini', section='postgresql'):
     parser = ConfigParser()
