@@ -4,7 +4,7 @@ from sqlite3 import paramstyle
 import psycopg2
 from configparser import ConfigParser
 
-######### To use: change password in create_database() function and database.ini
+######### To use: change password in create_database() function and database.ini, may need to rerun after connecting new database_poker
 
 def config(filename='database.ini', section='postgresql'):
     parser = ConfigParser()
@@ -12,9 +12,7 @@ def config(filename='database.ini', section='postgresql'):
     db = {}
     if parser.has_section(section):
         params = parser.items(section)
-        print(params)
         for param in params:
-            print(param)
             db[param[0]] = param[1]
     else:
         raise Exception('Section {0} not found in the {1} file'.format(section, filename))
@@ -58,7 +56,7 @@ def create_users_table():
         conn.autocommit = True
 
         cur = conn.cursor()
-
+        #FOREIGN KEY (table_id) REFERENCES tables(table_id)
         sql = '''CREATE TABLE IF NOT EXISTS public.users
                 (
                     user_id SERIAL PRIMARY KEY,
@@ -66,8 +64,7 @@ def create_users_table():
                     password_key BYTEA NOT NULL,
                     password_salt BYTEA NOT NULL,
                     table_id INT,
-                    bankroll MONEY NOT NULL DEFAULT 10000,
-                    FOREIGN KEY (table_id) REFERENCES tables(table_id)
+                    bankroll MONEY NOT NULL DEFAULT 10000
                 )
 
                 TABLESPACE pg_default;

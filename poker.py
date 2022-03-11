@@ -7,7 +7,9 @@ import sys
 import socket
 import threading
 from turtle import width
-
+import hashlib
+import psycopg2
+from configparser import ConfigParser
 #class object
 class Server:
   
@@ -1139,6 +1141,18 @@ class PlayerGUI:
 class Assets:
   pass
 
+def config(filename='database.ini', section='postgresql'):
+    parser = ConfigParser()
+    parser.read(filename)
+    db = {}
+    if parser.has_section(section):
+        params = parser.items(section)
+        for param in params:
+            db[param[0]] = param[1]
+    else:
+        raise Exception('Section {0} not found in the {1} file'.format(section, filename))
+    return db
+
 def initialize_card_images():
   card_images = {}
   suits = ("h", "d", "c", "s")
@@ -1164,7 +1178,40 @@ def clear_frame(frame):
     widget.destroy()
 
 def validate_log_in(username, password, top_frame, Images):
-  create_dashboard_view(top_frame, Images)
+  #ADD username/password validation
+  key, salt = retrieve_login_info(username)
+  key = bytes(key)
+
+  new_key = hashlib.pbkdf2_hmac('sha256', password.encode('utf-8'), salt, 100000, dklen=128)
+
+  if new_key == key:
+
+    create_dashboard_view(top_frame, Images)
+
+def retrieve_login_info(username):
+  conn = None
+  try:
+        params = config()
+        conn = psycopg2.connect(**params)
+
+        cur = conn.cursor()
+
+        sql = '''SELECT password_key, password_salt
+	            FROM public.users WHERE LOWER(username)=LOWER(%s);'''
+
+        cur.execute(sql, (username,))
+        login_info = cur.fetchone()
+
+        conn.close()
+
+        return login_info
+        
+  except (Exception, psycopg2.DatabaseError) as error:
+      print(error)
+  finally:
+      if conn is not None:
+          conn.close()
+      
 
 def create_dashboard_view(top_frame, Images):
   clear_frame(top_frame)
@@ -1299,7 +1346,6 @@ def gui():
 
   top_frame = Frame(gui, width=1200, height=800)
   top_frame.pack()
-  print(top_frame.cget("bg"))
   #initialize images
   Images = Assets()
   Images.register = PhotoImage(file="img/register.png")
@@ -1348,15 +1394,15 @@ def gui():
   gui.mainloop()
 
 def main():
-  #instantiate server
-  if (len(sys.argv)>1):
-    client = Client(sys.argv[1])
-    gui()
-  #instantiate client
-  else:
-    server = Server()
-    server.run()
-
+  # #instantiate server
+  # if (len(sys.argv)>1):
+  #   client = Client(sys.argv[1])
+  #   gui()
+  # #instantiate client
+  # else:
+  #   server = Server()
+  #   server.run()
+  gui()
 
   # players = []
 
