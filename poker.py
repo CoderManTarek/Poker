@@ -1,3 +1,4 @@
+from abc import abstractmethod
 import random
 from operator import attrgetter
 from tkinter import *
@@ -7,6 +8,8 @@ import sys
 import socket
 import threading
 from turtle import width
+import random
+import time
 
 #class object
 class Server:
@@ -58,7 +61,7 @@ class Server:
     # build table
     self.players = []
     self.deck = Deck()
-    self.table = Table(self.deck, 9, self.players)
+    self.table = ServerTable(self.deck, self.connections, 9, self.players)
     self.started = False
 
     # table.deal()
@@ -362,6 +365,10 @@ class Server:
         # start game condition
         if(len(self.table.players)>1 and self.started == False):
           self.started = True
+          initial_action = random.randint(1,2)
+          for player in self.table.players:
+            if(player.seat_number == initial_action):
+              player.action = True
           self.table.deal()
 
 
@@ -388,7 +395,7 @@ class Client:
   def sendMsg(self):
     while True:
       self.sock.send(bytes(input(""), 'utf-8'))
-      self.this_player = ""
+      self.this_player = ''
       self.table = None
       self.deck = None
       self.players = None
@@ -426,23 +433,64 @@ class Client:
           formattedMessage+=i+' '
         x+=1
 
+      if(tokens[0] == "Action:"):
+        for player in self.players:
+          #find player whos turn it is
+          print(self.this_player)
+          print(player.player_id, player.seat_number)
+          if(int(tokens[1]) == player.seat_number):       
+            # is that player on this client
+            if(player.player_id == self.this_player):  
+              print("you have the action {}".format(player.player_id))
 
-      # if a table has been joined successfully
+
+      # if cards have been dealt to players
+      if(tokens[0] == "Dealt:"):
+        #load cards in player objects within client
+        for player in self.table.players:
+          if(int(tokens[1]) == player.seat_number):
+            try:
+              weight = int(tokens[2])
+            except:
+              #deal with face cards
+              face_card_weights = {
+                'J':11,
+                'Q':12,
+                'K':13,
+                'A':14
+              }
+              weight = face_card_weights[tokens[2]]
+            card1 = Card(tokens[2], tokens[3], weight)
+            try:
+              weight = int(tokens[4])
+            except:
+              #deal with face cards
+              face_card_weights = {
+                'J':11,
+                'Q':12,
+                'K':13,
+                'A':14
+              }
+              weight = face_card_weights[tokens[4]]
+            card2 = Card(tokens[4], tokens[5], weight)
+            player.hand = Hand(card1, card2)
+
+      # if someone joins the table
       if(tokens[0] == "joined"):
-
+        
         # create a table
         self.players = []
         self.deck = Deck()
-        self.table = Table(self.deck, 9, self.players)
+        self.table = ClientTable(self.deck, 9, self.players)
         print("table joined")
 
         # load this player and external players data into table
-
-        for c in tokens[1]:
-          if(c == '('):
-            break
-          else:
-            self.this_player+= c
+        if(self.this_player == ''):
+          for c in tokens[1]:
+            if(c == '('):
+              break
+            else:
+              self.this_player+= c
         check = 0
         temp_player_id = ""
         temp_stack = ""
@@ -491,7 +539,7 @@ class Client:
 
 class Card:
   #constructor
-  def __init__(self, value, suit, weight):
+  def __init__(self, value, suit, weight = -1):
     self.value = value
     self.suit = suit
     self.weight = weight
@@ -536,6 +584,9 @@ class Hand:
     self.card1 = card1
     self.card2 = card2
 
+  def __str__(self):
+    return "{} {} {} {}".format(self.card1.value, self.card1.suit, self.card2.value, self.card2.suit)
+
 #add must be able to handle players playing through hands. most code will be here  
 class Table:
   cap = 10000
@@ -553,73 +604,15 @@ class Table:
     else:
       self.players = players
   
+  @abstractmethod
   def deal(self):
-    # shuffle and deal
-    self.deck.shuffle()
-    for player in self.players:
-      # change all players status
-      player.status = "in"
-
-      player.hand = Hand(self.deck.cards[0], self.deck.cards[len(self.players)])
-      self.deck.cards.remove(self.deck.cards[0])
-      self.deck.cards.remove(self.deck.cards[len(self.players)-1])
-    
-    # add condition to see if everyone folded ex: if len(active_players > 1)
-    self.preflop()
-    self.flop()
-    self.turn()
-    self.river()
-    self.showdown()
+    pass
 
   def print_table(self):
     print("Pot: ${}".format(self.pot))
     for player in self.active_players:
       if(player.status != "out"):
         print("Player {} [Stack: ${}]: {}{} {}{}".format(player.player_id, player.stack, player.hand.card1.value, player.hand.card1.suit[0], player.hand.card2.value, player.hand.card2.suit[0]))
-
-  def decision(self):
-    
-    # circle action around and track decisions, until stop conditions are met
-    while(True):
-      for player in self.active_players:
-        # stop condition
-        stop = True
-        for plyr in self.active_players:
-          if(plyr.status == "starting round"):
-            stop = False
-          if(plyr.status == "in (money owed)"):
-            stop = False
-        
-        if(stop == True):
-          print("betting round is over")
-          for plyr in self.active_players:
-            if(plyr.status == "in (money not owed)"):
-              plyr.status = "starting round"
-          return
-
-        if(player.status == "out"):
-          continue
-        self.print_table()
-        
-        # make a decision 
-        choice, amount = player.handle_action()
-
-        # change their status to folded
-        if(choice == "fold"):
-          player.status = "out"
-        if(choice == "bet"):
-          self.pot += amount
-          # change players amount owed
-          for plyr in self.active_players:
-            if(plyr == player):
-              continue
-            if(plyr.status != "out"):
-              plyr.owed = player.money_out
-              plyr.status = "in (money owed)"
-        if(choice == "call"):
-          self.pot += amount
-        if(choice == "check"):
-          pass
 
   def reset_player_round_amounts(self):
     for player in self.active_players:
@@ -630,65 +623,7 @@ class Table:
     for i in self.community_cards:
       print("{}{}".format(i.value, i.suit[0]))
 
-  def preflop(self):
-    # add all players that are dealt in to the active players list
-    for player in self.players:
-      player.status = "starting round"
-      self.active_players.append(player)
-    #self.print_table()
-    self.decision()
-  
-  def flop(self):
-    self.reset_player_round_amounts()
 
-    # deal 3 community cards
-    self.community_cards.append(self.deck.cards[0])
-    self.community_cards.append(self.deck.cards[1])
-    self.community_cards.append(self.deck.cards[2])
-    self.deck.cards.remove(self.deck.cards[2])
-    self.deck.cards.remove(self.deck.cards[1])
-    self.deck.cards.remove(self.deck.cards[0])
-
-    self.print_community_cards()
-
-    self.decision()
-
-  def turn(self):
-    self.reset_player_round_amounts()
-
-    self.community_cards.append(self.deck.cards[0])
-    self.deck.cards.remove(self.deck.cards[0])
-
-    self.print_community_cards()
-
-
-    #self.print_table()
-    self.decision()
-  
-  def river(self):
-    self.reset_player_round_amounts()
-    #self.print_table()
-
-    self.community_cards.append(self.deck.cards[0])
-    self.deck.cards.remove(self.deck.cards[0])
-
-
-    self.print_community_cards()
-
-    self.decision()
-
-    # # # delete this later (testing hand assign hand rankings function)
-    # for player in self.players:
-    #   player.hand.card1 = Card('8', 'diamond',8)
-    #   player.hand.card2 = Card('3', 'diamond',3)
-
-    #   self.community_cards[0] = Card('A', 'heart', 14)
-    #   self.community_cards[1] = Card('5', 'spade', 5)
-    #   self.community_cards[2] = Card('A', 'diamond', 14)
-    #   self.community_cards[3] = Card('8', 'heart', 8)
-    #   self.community_cards[4] = Card('9', 'spade', 9)
-
-    #   print('{}'.format(self.assign_hand_ranking(player)))
   
   def showdown(self):
     # objective: find the player that has the best hand and give them the pot
@@ -996,11 +931,238 @@ class Table:
     return ["High card {}".format(high_cards[0].value), high_cards]
 
 
+class ServerTable(Table):
+  def __init__(self, deck, connections,  total_seats,players = None, button_seat_number = 1):
+    super().__init__(deck, total_seats, players, button_seat_number)
+    self.connections = connections
+  
+  def send_action(self):
+  
+    # find player whos turn it is
+    for player in self.players:
+      if player.action == True:
+        for connection in self.connections:
+          connection.send(bytes("Action: {}".format(player.seat_number),'utf-8'))
+        break
+    # tell all clients whos turn it is
+  
+  def preflop(self):
+    # add all players that are dealt in to the active players list
+    for player in self.players:
+      player.status = "starting round"
+      self.active_players.append(player)
+    #self.print_table()
+    self.send_action()
+  
+  def flop(self):
+    self.reset_player_round_amounts()
+
+    # deal 3 community cards
+    self.community_cards.append(self.deck.cards[0])
+    self.community_cards.append(self.deck.cards[1])
+    self.community_cards.append(self.deck.cards[2])
+    self.deck.cards.remove(self.deck.cards[2])
+    self.deck.cards.remove(self.deck.cards[1])
+    self.deck.cards.remove(self.deck.cards[0])
+
+    self.print_community_cards()
+
+    self.send_action()
+
+  def turn(self):
+    self.reset_player_round_amounts()
+
+    self.community_cards.append(self.deck.cards[0])
+    self.deck.cards.remove(self.deck.cards[0])
+
+    self.print_community_cards()
+
+
+    #self.print_table()
+    self.send_action()
+  
+  def river(self):
+    self.reset_player_round_amounts()
+    #self.print_table()
+
+    self.community_cards.append(self.deck.cards[0])
+    self.deck.cards.remove(self.deck.cards[0])
+
+
+    self.print_community_cards()
+
+    self.send_action()
+
+    # # # delete this later (testing hand assign hand rankings function)
+    # for player in self.players:
+    #   player.hand.card1 = Card('8', 'diamond',8)
+    #   player.hand.card2 = Card('3', 'diamond',3)
+
+    #   self.community_cards[0] = Card('A', 'heart', 14)
+    #   self.community_cards[1] = Card('5', 'spade', 5)
+    #   self.community_cards[2] = Card('A', 'diamond', 14)
+    #   self.community_cards[3] = Card('8', 'heart', 8)
+    #   self.community_cards[4] = Card('9', 'spade', 9)
+
+    #   print('{}'.format(self.assign_hand_ranking(player)))
+  
+  def deal(self):
+    # shuffle and deal
+    self.deck.shuffle()
+    seats_and_hands = []
+    for player in self.players:
+      player.hand = Hand(self.deck.cards[0], self.deck.cards[len(self.players)])
+      self.deck.cards.remove(self.deck.cards[0])
+      self.deck.cards.remove(self.deck.cards[len(self.players)-1])
+      seats_and_hands.append((player.seat_number, Hand.__str__(player.hand)))
+    for connection in self.connections:
+      for i in seats_and_hands:
+        connection.send(bytes("Dealt: {} {}".format(i[0], i[1]), 'utf-8'))
+        time.sleep(0.25)
+    
+    # add condition to see if everyone folded ex: if len(active_players > 1)
+    self.preflop()
+    # self.flop()
+    # self.turn()
+    # self.river()
+    #self.showdown()
+
+class ClientTable(Table):
+  def __init__(self, deck, total_seats,players = None, button_seat_number = 1):
+    super().__init__(deck, total_seats, players, button_seat_number)
+  
+  def decision(self):
+  
+    # circle action around and track decisions, until stop conditions are met
+    while(True):
+      for player in self.active_players:
+        # stop condition
+        stop = True
+        for plyr in self.active_players:
+          if(plyr.status == "starting round"):
+            stop = False
+          if(plyr.status == "in (money owed)"):
+            stop = False
+        
+        if(stop == True):
+          print("betting round is over")
+          for plyr in self.active_players:
+            if(plyr.status == "in (money not owed)"):
+              plyr.status = "starting round"
+          return
+
+        if(player.status == "out"):
+          continue
+        self.print_table()
+        
+        # make a decision 
+        choice, amount = player.handle_action()
+
+        # change their status to folded
+        if(choice == "fold"):
+          player.status = "out"
+        if(choice == "bet"):
+          self.pot += amount
+          # change players amount owed
+          for plyr in self.active_players:
+            if(plyr == player):
+              continue
+            if(plyr.status != "out"):
+              plyr.owed = player.money_out
+              plyr.status = "in (money owed)"
+        if(choice == "call"):
+          self.pot += amount
+        if(choice == "check"):
+          pass
+  
+  def preflop(self):
+    # add all players that are dealt in to the active players list
+    for player in self.players:
+      player.status = "starting round"
+      self.active_players.append(player)
+    #self.print_table()
+    self.decision()
+  
+  def flop(self):
+    self.reset_player_round_amounts()
+
+    # deal 3 community cards
+    self.community_cards.append(self.deck.cards[0])
+    self.community_cards.append(self.deck.cards[1])
+    self.community_cards.append(self.deck.cards[2])
+    self.deck.cards.remove(self.deck.cards[2])
+    self.deck.cards.remove(self.deck.cards[1])
+    self.deck.cards.remove(self.deck.cards[0])
+
+    self.print_community_cards()
+
+    self.decision()
+
+  def turn(self):
+    self.reset_player_round_amounts()
+
+    self.community_cards.append(self.deck.cards[0])
+    self.deck.cards.remove(self.deck.cards[0])
+
+    self.print_community_cards()
+
+
+    #self.print_table()
+    self.decision()
+  
+  def river(self):
+    self.reset_player_round_amounts()
+    #self.print_table()
+
+    self.community_cards.append(self.deck.cards[0])
+    self.deck.cards.remove(self.deck.cards[0])
+
+
+    self.print_community_cards()
+
+    self.decision()
+
+    # # # delete this later (testing hand assign hand rankings function)
+    # for player in self.players:
+    #   player.hand.card1 = Card('8', 'diamond',8)
+    #   player.hand.card2 = Card('3', 'diamond',3)
+
+    #   self.community_cards[0] = Card('A', 'heart', 14)
+    #   self.community_cards[1] = Card('5', 'spade', 5)
+    #   self.community_cards[2] = Card('A', 'diamond', 14)
+    #   self.community_cards[3] = Card('8', 'heart', 8)
+    #   self.community_cards[4] = Card('9', 'spade', 9)
+
+    #   print('{}'.format(self.assign_hand_ranking(player)))
+  
+  def deal(self):
+    # shuffle and deal
+    self.deck.shuffle()
+    for player in self.players:
+      # change all players status
+      player.status = "in"
+
+      player.hand = Hand(self.deck.cards[0], self.deck.cards[len(self.players)])
+      self.deck.cards.remove(self.deck.cards[0])
+      self.deck.cards.remove(self.deck.cards[len(self.players)-1])
+    
+    # add condition to see if everyone folded ex: if len(active_players > 1)
+    self.preflop()
+    self.flop()
+    self.turn()
+    self.river()
+    self.showdown()
+  
+  
+
+
+
 
 # add rebuy(amount)
 class Player:
   num_of_players = 0
   def __init__(self, player_id = -1, seat_number = -1, stack = -1, hand = None):
+    self.action = False
     self.player_id = player_id
     self.seat_number = seat_number
     self.stack = stack
@@ -1037,7 +1199,7 @@ class Player:
     # if all in or out (folded), skip player
     # if(self.status == "all in" or self.status == "out"):
      
-    #  pass
+    # pass
     
     else:
       return 0
@@ -1352,7 +1514,7 @@ def main():
   #instantiate server
   if (len(sys.argv)>1):
     client = Client(sys.argv[1])
-    gui()
+    #gui()
   #instantiate client
   else:
     server = Server()
@@ -1361,7 +1523,7 @@ def main():
 
   # players = []
 
-  #instantiate players
+  # #instantiate players
   # for i in range(9):
   #   x = Player(i+1, i+1, 200)
   #   players.append(x)
