@@ -8,15 +8,11 @@ import sys
 import socket
 import threading
 from turtle import width
-<<<<<<< HEAD
 import random
 import time
-
-=======
 import hashlib
 import psycopg2
 from configparser import ConfigParser
->>>>>>> 03354bc784a5f4e7bc107b8d14cd9d84d588aa6a
 #class object
 class Server:
   
@@ -1661,7 +1657,6 @@ def gui():
   gui.mainloop()
 
 def main():
-<<<<<<< HEAD
   #instantiate server
   if (len(sys.argv)>1):
     client = Client(sys.argv[1])
@@ -1670,18 +1665,6 @@ def main():
   else:
     server = Server()
     server.run()
-
-=======
-  # #instantiate server
-  # if (len(sys.argv)>1):
-  #   client = Client(sys.argv[1])
-  #   gui()
-  # #instantiate client
-  # else:
-  #   server = Server()
-  #   server.run()
-  gui()
->>>>>>> 03354bc784a5f4e7bc107b8d14cd9d84d588aa6a
 
   # players = []
 
