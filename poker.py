@@ -21,6 +21,7 @@ class Server:
   activePlayersAndAddresses = []
   sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
   connections = []
+  table_players = [] # list of tuples (ip, port)
 
   def __init__(self):
 
@@ -94,6 +95,7 @@ class Server:
  
       #tokenize message recieved by server
       message = str(data, 'utf-8')
+      print(message)
       tokens = message.split(' ')
 
       # format message
@@ -326,6 +328,47 @@ class Server:
                   if(connection.getpeername()[1] == a[1]):
                       connection.send(bytes(serverList[:-2], 'utf-8'))
       
+      #############if a player makes a decision#############
+      if(tokens[0]=='decision'):
+        pass
+        loggedIn=False
+        #check if sender is logged in
+        for connectioniterator in self.activePlayersAndAddresses:
+          if(connectioniterator[1] == str(a[0])):
+            if(connectioniterator[2] == a[1]):
+              loggedIn=True
+        if(loggedIn == True):
+          # check if sender belongs to table
+          onTable = False
+          for player in self.table_players:
+            if(player[0] == str(a[0]) and player[1] == str(a[1])):
+              onTable = True
+              id = player[2]
+
+        if(loggedIn == True and onTable == True):
+          # check if sender has action
+          for player in self.table.players:
+            if(player.player_id == id):
+              if(player.action == True):
+                choice = tokens[1]
+                if choice == 'bet':
+                  amount = int(tokens[2])
+                  self.table.process_decision(id, choice, amount)
+                  # send choice to all cients to be processed on client side
+                if choice == 'call':
+                  pass
+                  # amount?
+                  # process choice on server.table
+                  # send choice to all cients to be processed on client side
+                if choice == 'check':
+                  pass
+                  # process choice on server.tabkle
+                  # send choice to all cients to be processed on client side
+                if choice == 'fold':
+                  pass
+                  # process choice on server side
+                  # send choice to all cients to be processed on client side
+
       #############if we are joining a table#############
       loggedIn=False
       if(tokens[0] == "join"):
@@ -344,6 +387,7 @@ class Server:
                 seat_num = len(self.table.players)+1
                 player = Player(plyr_id, seat_num, buy_in, None)
                 self.table.players.append(player)
+                self.table_players.append((str(a[0]), str(a[1]), plyr_id))
                 # send table.players [] data to connections that are on the table
 
 
@@ -397,13 +441,13 @@ class Client:
   def sendMsg(self):
     while True:
       self.sock.send(bytes(input(""), 'utf-8'))
-      self.this_player = ''
-      self.table = None
-      self.deck = None
-      self.players = None
 
   #instantiate thread
   def __init__(self, address):
+    self.this_player = ''
+    self.table = None
+    self.deck = None
+    self.players = None
     addressAndPort = address.split(':')
     try:
       self.sock.connect((addressAndPort[0], int(addressAndPort[1])))
@@ -937,7 +981,28 @@ class ServerTable(Table):
   def __init__(self, deck, connections,  total_seats,players = None, button_seat_number = 1):
     super().__init__(deck, total_seats, players, button_seat_number)
     self.connections = connections
-  
+
+  def process_decision(self, id, choice, amount = 0):
+    for player in self.players:
+      if player.player_id == id:
+        if choice == 'bet':
+          print("hello")
+          self.pot += amount
+          player.stack -= amount
+          player.money_out += amount
+          # set owed for other players
+          for plyr in self.players:
+            if(plyr == player):
+              continue
+            if(plyr.status != "out"):
+              plyr.owed = player.money_out
+              plyr.status = "in (money owed)"
+          print("Player {} {} {}".format(id, choice, amount))
+          
+
+
+
+
   def send_action(self):
   
     # find player whos turn it is
