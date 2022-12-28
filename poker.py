@@ -11,9 +11,9 @@ from turtle import width
 import random
 import time
 import hashlib
-import psycopg2
+#import psycopg2
 from configparser import ConfigParser
-#class object
+
 class Server:
   
   # server program data
@@ -196,9 +196,6 @@ class Server:
                   connection.send(bytes("Denied. Username must be 3-32 characters. Password must be 4-8 characters.", 'utf-8'))
         
 
-
-
-
       #############if we are logging in#############
       checklogin = False
       loginchecker = False
@@ -354,20 +351,27 @@ class Server:
                 if choice == 'bet':
                   amount = int(tokens[2])
                   self.table.process_decision(id, choice, amount)
-                  # send choice to all cients to be processed on client side
+                  self.table.print_table()
+                  self.table.iterate_action()
                 if choice == 'call':
                   pass
                   # amount?
                   # process choice on server.table
                   # send choice to all cients to be processed on client side
-                if choice == 'check':
-                  pass
-                  # process choice on server.tabkle
-                  # send choice to all cients to be processed on client side
-                if choice == 'fold':
-                  pass
-                  # process choice on server side
-                  # send choice to all cients to be processed on client side
+                if choice == 'check' or choice == 'fold':
+                  self.table.iterate_action()
+                  self.table.process_decision(id, choice)
+                  self.table.print_table()
+
+      #############if we are starting a game#############
+      if(tokens[0] == "start"):
+        self.started = True
+        initial_action = random.randint(1,len(self.table.players))
+        for player in self.table.players:
+          if(player.seat_number == initial_action):
+            player.action = True
+        self.table.deal()
+
 
       #############if we are joining a table#############
       loggedIn=False
@@ -409,13 +413,13 @@ class Server:
         for j in self.table.players:
           print("{} [Stack: {}] (Seat: {})".format(j.player_id, j.stack, j.seat_number))
         # start game condition
-        if(len(self.table.players)>1 and self.started == False):
-          self.started = True
-          initial_action = random.randint(1,2)
-          for player in self.table.players:
-            if(player.seat_number == initial_action):
-              player.action = True
-          self.table.deal()
+        #if(len(self.table.players)>1 and self.started == False):
+          # self.started = True
+          # initial_action = random.randint(1,2)
+          # for player in self.table.players:
+          #   if(player.seat_number == initial_action):
+          #     player.action = True
+          # self.table.deal()
 
 
 
@@ -447,7 +451,7 @@ class Client:
     self.this_player = ''
     self.table = None
     self.deck = None
-    self.players = None
+    self.players = []
     addressAndPort = address.split(':')
     try:
       self.sock.connect((addressAndPort[0], int(addressAndPort[1])))
@@ -480,14 +484,14 @@ class Client:
         x+=1
 
       if(tokens[0] == "Action:"):
-        for player in self.players:
+        for player in self.table.players:
           #find player whos turn it is
           print(self.this_player)
           print(player.player_id, player.seat_number)
           if(int(tokens[1]) == player.seat_number):       
             # is that player on this client
             if(player.player_id == self.this_player):  
-              print("you have the action {}".format(player.player_id))
+              print("you have the action {}, Stack: {}".format(player.player_id, player.stack))
 
 
       # if cards have been dealt to players
@@ -523,14 +527,13 @@ class Client:
 
       # if someone joins the table
       if(tokens[0] == "joined"):
-        
-        # create a table
-        self.players = []
         self.deck = Deck()
-        self.table = ClientTable(self.deck, 9, self.players)
+        # create a table
+        if self.table == None:
+          self.table = ClientTable(self.deck, 9, self.players)
         print("table joined")
 
-        # load this player and external players data into table
+        # find player whom client belongs to
         if(self.this_player == ''):
           for c in tokens[1]:
             if(c == '('):
@@ -541,10 +544,18 @@ class Client:
         temp_player_id = ""
         temp_stack = ""
         temp_player_seat = 0
+
+        # parse all other player data
         for c in message:
           if(c == ')'):
             check = 0
-            self.players.append(Player(temp_player_id, int(temp_player_seat), int(temp_stack), None))
+            tmp_player = Player(temp_player_id, int(temp_player_seat), int(temp_stack), None)
+            already_seated = False
+            for seated_player in self.table.players:
+              if seated_player.player_id == tmp_player.player_id:
+                already_seated = True
+            if(already_seated == False):
+              self.table.players.append(tmp_player)
             temp_player_id = ""
             temp_stack = ""
             temp_player_seat = 0
@@ -572,15 +583,27 @@ class Client:
             temp_stack += c
           if(check == 5):
             continue
+      # for player in players:
+      #   if player not in self.table.players:
+      #     print("hello")
+      #     self.table.players.append(player)
+    
         
-        #print("{}\n{}\n{}".format(temp_player_id, temp_player_seat, temp_stack))
+        
+      if tokens[0] == "Decision:":
+        temp_player_id = tokens[2]
+        choice = tokens[3]
 
-        #self.table.players.append(Player(temp_player_id, int(temp_player_seat), 200, None))
-        for p in self.players:
-          print(p)
-          
+        if choice == 'bet':
+          # convert amount to int
+          amount = int(tokens[4])
+          # increment pot
+          self.table.pot += amount
+          for player in self.table.players:
+            if player.player_id == temp_player_id:
+              player.stack -= amount
 
-          
+          self.table.print_all_players()
           
 
 class Card:
@@ -647,6 +670,7 @@ class Table:
 
     if players == None:
       self.players = []
+      self.players = players
     else:
       self.players = players
   
@@ -659,6 +683,14 @@ class Table:
     for player in self.active_players:
       if(player.status != "out"):
         print("Player {} [Stack: ${}]: {}{} {}{}".format(player.player_id, player.stack, player.hand.card1.value, player.hand.card1.suit[0], player.hand.card2.value, player.hand.card2.suit[0]))
+
+
+  def print_all_players(self):
+    print("Pot: ${}".format(self.pot))
+    for player in self.players:
+      if(True):
+        print("Player {} [Stack: ${}]: {}{} {}{}".format(player.player_id, player.stack, player.hand.card1.value, player.hand.card1.suit[0], player.hand.card2.value, player.hand.card2.suit[0]))
+    
 
   def reset_player_round_amounts(self):
     for player in self.active_players:
@@ -982,11 +1014,40 @@ class ServerTable(Table):
     super().__init__(deck, total_seats, players, button_seat_number)
     self.connections = connections
 
+  def iterate_action(self):
+    active_player_list = []
+    for player in self.players:
+      if player.status != "out":
+        active_player_list.append(player)
+
+    for index, player in enumerate(active_player_list):
+      # find playter who just made a decision
+      if player.action == True:
+        # take action away from client who jsut made a decision
+        for pl in self.players:
+          if pl.player_id == player.player_id:
+            pl.action = False
+
+        player.action = False
+        # give action to next player that is not out
+        if((index+1) <= len(active_player_list)-1):
+          for p in self.players:
+            if p.player_id == active_player_list[index+1].player_id:
+              p.action = True
+              self.send_action()
+              return
+        else:
+          for p in self.players:
+            if p.player_id == active_player_list[0].player_id:
+              p.action = True
+              self.send_action()
+              return
+
+
   def process_decision(self, id, choice, amount = 0):
     for player in self.players:
       if player.player_id == id:
         if choice == 'bet':
-          print("hello")
           self.pot += amount
           player.stack -= amount
           player.money_out += amount
@@ -997,11 +1058,27 @@ class ServerTable(Table):
             if(plyr.status != "out"):
               plyr.owed = player.money_out
               plyr.status = "in (money owed)"
-          print("Player {} {} {}".format(id, choice, amount))
-          
+          server_response = "Decision: Player {} {} {}".format(id, choice, amount)
+          for connection in self.connections:
+            connection.send(bytes(server_response, 'utf-8'))
 
+        if choice == 'check':
+          for player in self.players:
+            if player.player_id == id:
+              player.status = "in (money not owed)"
+          server_response = "Decision: Player {} {} {}".format(id, choice, amount)
+          for connection in self.connections:
+            connection.send(bytes(server_response, 'utf-8'))
 
+        if choice == 'fold':
+          for player in self.players:
+            if player.player_id == id:
+              player.status = "out"
+          server_response = "Decision: Player {} {} {}".format(id, choice, amount)
+          for connection in self.connections:
+            connection.send(bytes(server_response, 'utf-8'))
 
+          # hand nonshowdown stop condition
 
   def send_action(self):
   
