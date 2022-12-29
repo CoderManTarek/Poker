@@ -729,12 +729,6 @@ class Table:
 
   
   def showdown(self):
-    # objective: find the player that has the best hand and give them the pot
-
-    # steps
-
-    # find the player with the best hand
-
     # iterate through all players
     for player in self.players:
 
@@ -743,11 +737,6 @@ class Table:
 
         # assign all of their hand rankings
         player.hand_data.append(self.assign_hand_ranking(player))
-
-    # # test (delete later)
-    # for i in self.players:
-    #   print("Player {} Hand: {} Hand Rank: {}".format(i.player_id, i.hand_data, i.hand_rank))
-      
     
     top_hand_rank = -1
     winning_player = Player()
@@ -1082,6 +1071,8 @@ class ServerTable(Table):
         if rnd != 'river':
           self.current_betting_round = self.betting_rounds[index + 1]
           break
+        else:
+          self.current_betting_round = 'showdown'
     
     if self.current_betting_round == 'flop':
       self.flop()
@@ -1091,6 +1082,10 @@ class ServerTable(Table):
     
     if self.current_betting_round == 'river':
       self.river()
+    
+    if self.current_betting_round == 'showdown':
+      print("Showdown")
+      self.showdown()
 
 
   def process_decision(self, id, choice, amount = 0):
@@ -1118,7 +1113,7 @@ class ServerTable(Table):
           for connection in self.connections:
             connection.send(bytes(server_response, 'utf-8'))
           if(self.is_round_over() == True):
-            print("betting round is over")
+            print("{} betting round is over".format(self.current_betting_round))
             self.increment_betting_round()
 
         if choice == 'fold':
@@ -1140,7 +1135,7 @@ class ServerTable(Table):
             for connection in self.connections:
               connection.send(bytes(server_response, 'utf-8'))
             if(self.is_round_over() == True):
-              print("betting round is over")
+              print("{} betting round is over".format(self.current_betting_round))
               self.increment_betting_round()
 
         if choice == 'call':
@@ -1156,7 +1151,7 @@ class ServerTable(Table):
           for connection in self.connections:
             connection.send(bytes(server_response, 'utf-8'))
           if(self.is_round_over() == True):
-            print("betting round is over")
+            print("{} betting round is over".format(self.current_betting_round))
             self.increment_betting_round()
 
   def send_action(self):
