@@ -365,10 +365,12 @@ class Server:
                   self.table.print_table()
                 
                 if choice == 'fold':
+                  # end hand if only one playuer remains
                   active_player_count = 0
                   for plyr in self.table.players:
                     if plyr.status != 'out':
                       active_player_count +=1
+                  
                   if active_player_count != 2:
                     self.table.iterate_action()
                   self.table.process_decision(id, choice)
@@ -1036,6 +1038,8 @@ class ServerTable(Table):
   def __init__(self, deck, connections,  total_seats,players = None, button_seat_number = 1):
     super().__init__(deck, total_seats, players, button_seat_number)
     self.connections = connections
+    self.betting_rounds = ["preflop", "flop", "turn", "river"]
+    self.current_betting_round = ""
 
   def iterate_action(self):
     active_player_list = []
@@ -1071,6 +1075,23 @@ class ServerTable(Table):
       if(player.status == "in (money owed)" or player.status == "starting round"):
         return False
     return True
+  
+  def increment_betting_round(self):
+    for index, rnd in enumerate(self.betting_rounds):
+      if rnd == self.current_betting_round:
+        if rnd != 'river':
+          self.current_betting_round = self.betting_rounds[index + 1]
+          break
+    
+    if self.current_betting_round == 'flop':
+      self.flop()
+    
+    if self.current_betting_round == 'turn':
+      self.turn()
+    
+    if self.current_betting_round == 'river':
+      self.river()
+
 
   def process_decision(self, id, choice, amount = 0):
     for player in self.players:
@@ -1098,6 +1119,7 @@ class ServerTable(Table):
             connection.send(bytes(server_response, 'utf-8'))
           if(self.is_round_over() == True):
             print("betting round is over")
+            self.increment_betting_round()
 
         if choice == 'fold':
           player.status = "out"
@@ -1119,6 +1141,7 @@ class ServerTable(Table):
               connection.send(bytes(server_response, 'utf-8'))
             if(self.is_round_over() == True):
               print("betting round is over")
+              self.increment_betting_round()
 
         if choice == 'call':
           for player in self.players:
@@ -1134,6 +1157,7 @@ class ServerTable(Table):
             connection.send(bytes(server_response, 'utf-8'))
           if(self.is_round_over() == True):
             print("betting round is over")
+            self.increment_betting_round()
 
   def send_action(self):
   
@@ -1146,6 +1170,7 @@ class ServerTable(Table):
     # tell all clients whos turn it is
   
   def preflop(self):
+    self.current_betting_round = 'preflop'
     # add all players that are dealt in to the active players list
     for player in self.players:
       player.status = "starting round"
@@ -1154,18 +1179,27 @@ class ServerTable(Table):
     self.send_action()
   
   def flop(self):
-    self.reset_player_round_amounts()
-
-    # deal 3 community cards
     self.community_cards.append(self.deck.cards[0])
     self.community_cards.append(self.deck.cards[1])
     self.community_cards.append(self.deck.cards[2])
-    self.deck.cards.remove(self.deck.cards[2])
-    self.deck.cards.remove(self.deck.cards[1])
+
     self.deck.cards.remove(self.deck.cards[0])
+    self.deck.cards.remove(self.deck.cards[1])
+    self.deck.cards.remove(self.deck.cards[2])
 
-    self.print_community_cards()
+    server_response = "Flop: {}{} {}{} {}{}".format(self.community_cards[0].value, self.community_cards[0].suit[0], self.community_cards[1].value, self.community_cards[1].suit[0], self.community_cards[2].value, self.community_cards[2].suit[0])
 
+    for connection in self.connections:
+      connection.send(bytes(server_response, 'utf-8'))
+    
+    time.sleep(0.1)
+
+    self.reset_player_round_amounts()
+    self.active_players = []
+    for player in self.players:
+      if player.status != "out":
+        player.status = "starting round"
+        self.active_players.append(player)
     self.send_action()
 
   def turn(self):
@@ -1174,10 +1208,19 @@ class ServerTable(Table):
     self.community_cards.append(self.deck.cards[0])
     self.deck.cards.remove(self.deck.cards[0])
 
-    self.print_community_cards()
+    server_response = "Turn: {}{} {}{} {}{} {}{}".format(self.community_cards[0].value, self.community_cards[0].suit[0], self.community_cards[1].value, self.community_cards[1].suit[0], self.community_cards[2].value, self.community_cards[2].suit[0], self.community_cards[3].value, self.community_cards[3].suit[0])
 
+    for connection in self.connections:
+      connection.send(bytes(server_response, 'utf-8'))
+    
+    time.sleep(0.1)
 
-    #self.print_table()
+    self.reset_player_round_amounts()
+    self.active_players = []
+    for player in self.players:
+      if player.status != "out":
+        player.status = "starting round"
+        self.active_players.append(player)
     self.send_action()
   
   def river(self):
@@ -1187,23 +1230,20 @@ class ServerTable(Table):
     self.community_cards.append(self.deck.cards[0])
     self.deck.cards.remove(self.deck.cards[0])
 
+    server_response = "River: {}{} {}{} {}{} {}{} {}{}".format(self.community_cards[0].value, self.community_cards[0].suit[0], self.community_cards[1].value, self.community_cards[1].suit[0], self.community_cards[2].value, self.community_cards[2].suit[0], self.community_cards[3].value, self.community_cards[3].suit[0], self.community_cards[4].value, self.community_cards[4].suit[0])
 
-    self.print_community_cards()
+    for connection in self.connections:
+      connection.send(bytes(server_response, 'utf-8'))
+    
+    time.sleep(0.1)
 
+    self.reset_player_round_amounts()
+    self.active_players = []
+    for player in self.players:
+      if player.status != "out":
+        player.status = "starting round"
+        self.active_players.append(player)
     self.send_action()
-
-    # # # delete this later (testing hand assign hand rankings function)
-    # for player in self.players:
-    #   player.hand.card1 = Card('8', 'diamond',8)
-    #   player.hand.card2 = Card('3', 'diamond',3)
-
-    #   self.community_cards[0] = Card('A', 'heart', 14)
-    #   self.community_cards[1] = Card('5', 'spade', 5)
-    #   self.community_cards[2] = Card('A', 'diamond', 14)
-    #   self.community_cards[3] = Card('8', 'heart', 8)
-    #   self.community_cards[4] = Card('9', 'spade', 9)
-
-    #   print('{}'.format(self.assign_hand_ranking(player)))
   
   def deal(self):
     # shuffle and deal
@@ -1217,14 +1257,9 @@ class ServerTable(Table):
     for connection in self.connections:
       for i in seats_and_hands:
         connection.send(bytes("Dealt: {} {}".format(i[0], i[1]), 'utf-8'))
-        time.sleep(0.25)
+        time.sleep(0.1)
     
-    # add condition to see if everyone folded ex: if len(active_players > 1)
     self.preflop()
-    # self.flop()
-    # self.turn()
-    # self.river()
-    #self.showdown()
 
 class ClientTable(Table):
   def __init__(self, deck, total_seats,players = None, button_seat_number = 1):
