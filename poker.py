@@ -354,12 +354,23 @@ class Server:
                   self.table.print_table()
                   self.table.iterate_action()
                 if choice == 'call':
-                  pass
-                  # amount?
-                  # process choice on server.table
-                  # send choice to all cients to be processed on client side
-                if choice == 'check' or choice == 'fold':
+                  amount = player.owed - player.money_out
+                  self.table.process_decision(id, choice, amount)
+                  self.table.print_table()
                   self.table.iterate_action()
+                  
+                if choice == 'check':
+                  self.table.iterate_action()
+                  self.table.process_decision(id, choice)
+                  self.table.print_table()
+                
+                if choice == 'fold':
+                  active_player_count = 0
+                  for plyr in self.table.players:
+                    if plyr.status != 'out':
+                      active_player_count +=1
+                  if active_player_count != 2:
+                    self.table.iterate_action()
                   self.table.process_decision(id, choice)
                   self.table.print_table()
 
@@ -412,17 +423,6 @@ class Server:
                 print("table is full")
         for j in self.table.players:
           print("{} [Stack: {}] (Seat: {})".format(j.player_id, j.stack, j.seat_number))
-        # start game condition
-        #if(len(self.table.players)>1 and self.started == False):
-          # self.started = True
-          # initial_action = random.randint(1,2)
-          # for player in self.table.players:
-          #   if(player.seat_number == initial_action):
-          #     player.action = True
-          # self.table.deal()
-
-
-
 
   #infinitely looping run scope that utilizes threads and our handeler function to accept new connections
   def run(self):
@@ -482,12 +482,12 @@ class Client:
         if(x!=0 and x!=1):
           formattedMessage+=i+' '
         x+=1
+      if tokens[0] == 'Win:':
+        self.table.print_all_players()
 
       if(tokens[0] == "Action:"):
         for player in self.table.players:
           #find player whos turn it is
-          print(self.this_player)
-          print(player.player_id, player.seat_number)
           if(int(tokens[1]) == player.seat_number):       
             # is that player on this client
             if(player.player_id == self.this_player):  
@@ -602,8 +602,31 @@ class Client:
           for player in self.table.players:
             if player.player_id == temp_player_id:
               player.stack -= amount
+              player.status = "in (money not owed)"
 
           self.table.print_all_players()
+
+        if choice == 'call':
+          amount = int(tokens[4])
+          self.table.pot += amount
+          for player in self.table.players:
+            if player.player_id == temp_player_id:
+              player.stack -= amount
+              player.status = "in (money not owed)"
+          
+          self.table.print_all_players()
+        
+        if choice == 'check':
+          for player in self.table.players:
+            if player.player_id == temp_player_id:
+              player.status = "in (money not owed)"
+
+          self.table.print_all_players()
+        
+        if choice == 'fold':
+          for player in self.table.players:
+            if player == temp_player_id:
+              player.status = "out"
           
 
 class Card:
@@ -1043,6 +1066,11 @@ class ServerTable(Table):
               self.send_action()
               return
 
+  def is_round_over(self):
+    for player in self.players:
+      if(player.status == "in (money owed)" or player.status == "starting round"):
+        return False
+    return True
 
   def process_decision(self, id, choice, amount = 0):
     for player in self.players:
@@ -1051,6 +1079,7 @@ class ServerTable(Table):
           self.pot += amount
           player.stack -= amount
           player.money_out += amount
+          player.status = "in (money not owed)"
           # set owed for other players
           for plyr in self.players:
             if(plyr == player):
@@ -1063,22 +1092,48 @@ class ServerTable(Table):
             connection.send(bytes(server_response, 'utf-8'))
 
         if choice == 'check':
-          for player in self.players:
-            if player.player_id == id:
-              player.status = "in (money not owed)"
-          server_response = "Decision: Player {} {} {}".format(id, choice, amount)
+          player.status = "in (money not owed)"
+          server_response = "Decision: Player {} {}".format(id, choice)
           for connection in self.connections:
             connection.send(bytes(server_response, 'utf-8'))
+          if(self.is_round_over() == True):
+            print("betting round is over")
 
         if choice == 'fold':
+          player.status = "out"
+          active_players = []
+          # count how many players remain in hand
+          for plyr in self.players:
+            if plyr.status != 'out':
+              active_players.append(plyr)
+          # if only one player remains, they win without showdown
+          if len(active_players) == 1:
+            active_players[0].stack += self.pot
+            server_response = "Decision: Player {} {}\nWin: Player {} wins ${}".format(id, choice, active_players[0].player_id, self.pot)
+            for connection in self.connections:
+              connection.send(bytes(server_response, 'utf-8'))
+            self.pot = 0
+          else:
+            server_response = "Decision: Player {} {}".format(id, choice)
+            for connection in self.connections:
+              connection.send(bytes(server_response, 'utf-8'))
+            if(self.is_round_over() == True):
+              print("betting round is over")
+
+        if choice == 'call':
           for player in self.players:
             if player.player_id == id:
-              player.status = "out"
+              self.pot += amount
+              player.stack -= amount
+              player.owed = 0
+              player.money_out += amount
+              player.status = "in (money not owed)"
+
           server_response = "Decision: Player {} {} {}".format(id, choice, amount)
           for connection in self.connections:
             connection.send(bytes(server_response, 'utf-8'))
-
-          # hand nonshowdown stop condition
+          if(self.is_round_over() == True):
+            print("betting round is over")
 
   def send_action(self):
   
@@ -1807,22 +1862,5 @@ def main():
   else:
     server = Server()
     server.run()
-
-  # players = []
-
-  # #instantiate players
-  # for i in range(9):
-  #   x = Player(i+1, i+1, 200)
-  #   players.append(x)
-
-
-  # # instantiate deck and table
-  # deck = Deck()
-  # table = Table(deck, 9, players)
-
-  # #test shuffle
-  # table.deal()
-
-
 
 main()
