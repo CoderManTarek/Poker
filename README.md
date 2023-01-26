@@ -16,7 +16,7 @@ To Do:
     - make hands infinitely loop
     - fix dealing issue
   
-- QA (After core functionality is finisged)
+- QA (After core functionality is finished)
  
 - Stretch Features
   - database
