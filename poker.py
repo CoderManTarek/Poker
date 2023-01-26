@@ -446,7 +446,8 @@ class Client:
   sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
   def sendMsg(self):
     while True:
-      self.sock.send(bytes(input(""), 'utf-8'))
+      msg = input("")
+      self.sock.send(bytes(msg, 'utf-8'))
 
   #instantiate thread
   def __init__(self, address):
@@ -726,9 +727,39 @@ class Table:
     for i in self.community_cards:
       print("{}{}".format(i.value, i.suit[0]))
 
-
-  
   def showdown(self):
+
+    # # test data (delete later)
+    # test_card1 = Card('A', 'diamond', 14)
+    # test_card2 = Card('5', 'spade', 5)
+    # hand1 = Hand(test_card1, test_card2)
+
+    # test_card3 = Card('K', 'club', 13)
+    # test_card4 = Card('K', 'spade', 13)
+    # hand2 = Hand(test_card3, test_card4)
+
+    # test_card5 = Card('9', 'heart', 9)
+    # test_card6 = Card('10', 'heart', 10)
+    # hand3 = Hand(test_card5, test_card6)
+
+    # test_card7 = Card('4', 'heart', 4)
+    # test_card8 = Card('5', 'heart', 4)
+    # test_card9 = Card('6', 'heart', 6)
+    # test_card10 = Card('7', 'heart', 7)
+    # test_card11 = Card('8', 'heart', 8)
+    # self.community_cards = [test_card7, test_card8, test_card9, test_card10, test_card11]
+
+    # self.players[0].hand = hand1
+    # self.players[1].hand = hand2
+    # self.players[2].hand = hand3
+
+    # test (delete this later)
+    for player in self.players:
+      print("Player {} [Stack: ${}]: {}{} {}{}".format(player.player_id, player.stack, player.hand.card1.value, player.hand.card1.suit[0], player.hand.card2.value, player.hand.card2.suit[0]))
+
+    print("Community Cards: ")
+    print(*self.community_cards)    
+
     # iterate through all players
     for player in self.players:
 
@@ -736,7 +767,7 @@ class Table:
       if(player.status != "out"):
 
         # assign all of their hand rankings
-        player.hand_data.append(self.assign_hand_ranking(player))
+        player.hand_data+=self.assign_hand_ranking(player)
     
     top_hand_rank = -1
     winning_player = Player()
@@ -760,21 +791,405 @@ class Table:
       for player in self.players:
         print("Player {} [Stack: ${}]: {}{} {}{}".format(player.player_id, player.stack, player.hand.card1.value, player.hand.card1.suit[0], player.hand.card2.value, player.hand.card2.suit[0]))
     
-    else:
-      pass
     # if  two players tie for best hand type
-      # compare hand values (2-A)
-      # if values are the same
-          # tie for for straight
-          # compare kickers/high cards for high card, pair, two pair, 3 of a kind, flush, full house, 4 of a kind
-            # if kickers are the same
-              # tie()
-            # else:
-              # give winner pot
-      # else
-        # give winner pot
-    #
-    # give the player the pot
+    else:
+      # locate players that tie and load to list
+      tie_players = []
+      for player in self.players:
+        if player.hand_rank == winning_player.hand_rank:
+          tie_players.append(player)
+
+
+      # flush analysis [5]
+      if winning_player.hand_rank == 5:
+        nested_tie = False
+        nested_tie_players = []
+        highest_player = None
+        highest_weight = -1
+        for player in tie_players:
+          total_weight = 0
+          for card in player.hand_data[1]:
+            total_weight += card.weight
+          if total_weight>highest_weight:
+            highest_weight = total_weight
+            highest_player = player
+            nested_tie = False
+            nested_tie_players = [player]
+            continue
+          if total_weight == highest_weight:
+            nested_tie = True
+            nested_tie_players.append(player)
+        # if only one player wins, give them the entire pot
+        if nested_tie == False:
+          highest_player.stack += self.pot
+          self.pot = 0
+        # if multiple players win, divide the pot and increment their stacks
+        else:
+          total_tie_players = len(nested_tie_players)
+          for player in nested_tie_players:
+            player.stack+=(self.pot/total_tie_players)
+          self.pot = 0
+
+
+      # straight analysis (straight, straight flush) [8, 4]
+      if winning_player.hand_rank in [8, 4]:
+        nested_tie_players = []
+        nested_tie = False
+        highest_straight = -1
+        highest_player = None
+        # iterate through tie players
+        for player in tie_players:
+          # strip hand_data for high value in integer format
+          tokenized_hand_data = player.hand_data[0].split(' ')
+          for index, token in enumerate(tokenized_hand_data):
+            if token == 'high':
+              high_card = tokenized_hand_data[index-1]
+              try:
+                high_value = int(high_card)
+              except:
+                card_dict = {
+                  'J':11,
+                  'Q':12,
+                  'K':13,
+                  'A':14
+                }
+                high_value = card_dict[high_card]
+          if high_value > highest_straight:
+            highest_straight = high_value
+            highest_player = player
+            nested_tie = False
+            nested_tie_players = [player]
+            continue
+          if high_value == highest_straight:
+            nested_tie = True
+            nested_tie_players.append(player)
+        # if only one player wins, give them the entire pot
+        if nested_tie == False:
+          highest_player.stack += self.pot
+          self.pot = 0
+        # if multiple players win, divide the pot and increment their stacks
+        else:
+          total_tie_players = len(nested_tie_players)
+          for player in nested_tie_players:
+            player.stack+=(self.pot/total_tie_players)
+          self.pot = 0
+      
+
+      # two pair analysis [2]
+      if winning_player.hand_rank == 2:
+        highest_player = None
+        highest_kicker = -1
+        highest_pair = -1
+        lowest_pair = -1
+        nested_tie_players = []
+        nested_tie = False
+        for player in tie_players:
+          two_pair_values = []
+          tokenized_hand_data = player.hand_data[0].split(' ')
+          kicker_value = ''
+          kicker_int = -1
+          high_pair = -1
+          low_pair = -1
+          for index, token in enumerate(tokenized_hand_data):
+            if '\'s' in token:
+              two_pair_values.append(token.split('\'')[0])
+            if token == 'kicker':
+              kicker_value = tokenized_hand_data[index-1]
+
+          # convert kicker to int
+          try:
+            kicker_int = int(kicker_value)
+          except:
+            card_dict = {
+              'J':11,
+              'Q':12,
+              'K':13,
+              'A':14
+            }
+            kicker_int = card_dict[kicker_value]
+
+          # convert one pair to int
+          pair1 = two_pair_values[0]
+          pair2 = two_pair_values[1]
+          try:
+            pair1_int = int(pair1)
+          except:
+            card_dict = {
+              'J':11,
+              'Q':12,
+              'K':13,
+              'A':14
+            }
+            pair1_int = card_dict[pair1]
+
+          # convert second pair to int
+          try:
+            pair2_int = int(pair2)
+          except:
+            card_dict = {
+              'J':11,
+              'Q':12,
+              'K':13,
+              'A':14
+            }
+            pair2_int = card_dict[pair2]
+          
+          if pair1_int>pair2_int:
+            high_pair = pair1_int
+            low_pair = pair2_int
+          else:
+            high_pair = pair2_int
+            low_pair = pair1_int
+          
+          # check highest pair
+          if high_pair>highest_pair:
+            highest_player = player
+            highest_pair = high_pair
+            lowest_pair = low_pair
+            highest_kicker = kicker_int
+            nested_tie = False
+            nested_tie_players = [player]
+            continue
+          elif high_pair < highest_pair:
+            continue
+
+          # check lowest pair
+          if low_pair>lowest_pair:
+            highest_player = player
+            highest_pair = high_pair
+            lowest_pair = low_pair
+            highest_kicker = kicker_int
+            nested_tie = False
+            nested_tie_players = [player]
+            continue
+          elif low_pair<lowest_pair:
+            continue
+
+          # check kicker
+          if kicker_int > highest_kicker:
+            highest_player = player
+            highest_pair = high_pair
+            lowest_pair = low_pair
+            highest_kicker = kicker_int
+            nested_tie = False
+            nested_tie_players = [player]
+            continue
+
+          # tie condition
+          elif kicker_int == highest_kicker:
+            nested_tie = True
+            nested_tie_players.append(player)
+
+        # if only one player wins, give them the entire pot
+        if nested_tie == False:
+          highest_player.stack += self.pot
+          self.pot = 0
+        # if multiple players win, divide the pot and increment their stacks
+        else:
+          total_tie_players = len(nested_tie_players)
+          for player in nested_tie_players:
+            player.stack+=(self.pot/total_tie_players)
+          self.pot = 0
+
+          
+      # kicker analysis (four of a kind)  [7]
+      if winning_player.hand_rank == 7:
+        highest_player = None
+        highest_kicker = -1
+        nested_tie_players = []
+        nested_tie = False
+        for player in tie_players:
+          tokenized_hand_data = player.hand_data[0].split(' ')
+          for index, token in enumerate(tokenized_hand_data):
+            if token == 'kicker':
+              kicker_value = tokenized_hand_data[index-1]
+              try:
+                kicker_int = int(kicker_value)
+              except:
+                card_dict = {
+                  'J':11,
+                  'Q':12,
+                  'K':13,
+                  'A':14
+                }
+                kicker_int = card_dict[kicker_value]
+              if kicker_int == highest_kicker:
+                nested_tie = True
+                nested_tie_players.append(player)
+              if kicker_int > highest_kicker:
+                highest_player = player
+                highest_kicker = kicker_int
+                nested_tie = False
+                nested_tie_players = [player]
+        # if only one player wins, give them the entire pot
+        if nested_tie == False:
+          highest_player.stack += self.pot
+          self.pot = 0
+        # if multiple players win, divide the pot and increment their stacks
+        else:
+          total_tie_players = len(nested_tie_players)
+          for player in nested_tie_players:
+            player.stack+=(self.pot/total_tie_players)
+          self.pot = 0
+
+      # full house analysis (full house) [6]
+      if winning_player.hand_rank == 6:
+        highest_player = None
+        highest_trips = -1
+        highest_pair = -1
+        nested_tie_players = []
+        nested_tie = False
+        for player in tie_players:
+          trips_pair_values = []
+          tokenized_hand_data = player.hand_data[0].split(' ')
+          kicker_int = -1
+          high_pair = -1
+          low_pair = -1
+          for index, token in enumerate(tokenized_hand_data):
+            if '\'s' in token:
+              trips_pair_values.append(token.split('\'')[0])
+          # convert trips to int
+          trips = trips_pair_values[0]
+          pair = trips_pair_values[1]
+          try:
+            trips_int = int(trips)
+          except:
+            card_dict = {
+              'J':11,
+              'Q':12,
+              'K':13,
+              'A':14
+            }
+            trips_int = card_dict[trips]
+          pair_int=-1
+          # convert pair to int
+          try:
+            pair_int = int(pair)
+          except:
+            card_dict = {
+              'J':11,
+              'Q':12,
+              'K':13,
+              'A':14
+            }
+            pair_int = card_dict[pair]
+          # check trips
+          if trips_int > highest_trips:
+            highest_player = player
+            highest_trips = trips_int
+            highest_pair = pair_int
+            nested_tie = False
+            nested_tie_players = [player]
+            continue
+          if trips_int == highest_trips:
+            if pair_int > highest_pair:
+              highest_player = player
+              highest_trips = trips_int
+              highest_pair = pair_int
+              nested_tie = False
+              continue
+              nested_tie_players = [player]
+            if pair_int == highest_pair:
+              nested_tie = True
+              nested_tie_players.append(player)
+        # if only one player wins, give them the entire pot
+        if nested_tie == False:
+          highest_player.stack += self.pot
+          self.pot = 0
+        # if multiple players win, divide the pot and increment their stacks
+        else:
+          total_tie_players = len(nested_tie_players)
+          for player in nested_tie_players:
+            player.stack+=(self.pot/total_tie_players)
+          self.pot = 0
+        
+      # high card analysis (high card, pair, three of a kind) [0, 1, 3]
+      if winning_player.hand_rank == 0:
+        highest_weight = -1
+        highest_player = None
+        nested_tie = False
+        nested_tie_players = []
+        for player in tie_players:
+          total_weight = 0
+          for card in player.hand_data[1]:
+            total_weight += card.weight
+          if total_weight > highest_weight:
+            highest_player = player
+            highest_weight = total_weight
+            nested_tie = False
+            nested_tie_players = [player]
+            continue
+          if total_weight == highest_weight:
+            nested_tie = True
+            nested_tie_players.append(player)
+        # if only one player wins, give them the entire pot
+        if nested_tie == False:
+          highest_player.stack += self.pot
+          self.pot = 0
+        # if multiple players win, divide the pot and increment their stacks
+        else:
+          total_tie_players = len(nested_tie_players)
+          for player in nested_tie_players:
+            player.stack+=(self.pot/total_tie_players)
+          self.pot = 0
+      
+      if winning_player.hand_rank in [1,3]:
+        highest_pair = -1
+        highet_weight = -1
+        highest_player = None
+        nested_tie = False
+        nested_tie_players = []
+        for player in tie_players:
+          total_weight = 0
+          tokenized_hand_data = player.hand_data[0].split(' ')
+          for index, token in enumerate(tokenized_hand_data):
+            if '\'s' in token:
+              pair = token.split('\'')[0]
+          try:
+            int_pair = int(pair)
+          except:
+            card_dict = {
+              'J':11,
+              'Q':12,
+              'K':13,
+              'A':14
+            }
+            int_pair = card_dict[pair]
+          for card in player.hand_data[1]:
+            total_weight+=card.weight
+          
+          if int_pair > highest_pair:
+            highest_pair = int_pair
+            highest_weight = total_weight
+            highest_player = player
+            nested_tie = False
+            nested_tie_players = [player]
+            continue
+          if int_pair == highest_pair:
+            if total_weight > highest_weight:
+              highest_pair = int_pair
+              highest_weight = total_weight
+              highest_player = player
+              nested_tie = False
+              nested_tie_players = [player]
+              continue
+            if total_weight == highest_weight:
+              nested_tie = True
+              nested_tie_players.append(player)
+        # if only one player wins, give them the entire pot
+        if nested_tie == False:
+          highest_player.stack += self.pot
+          self.pot = 0
+        # if multiple players win, divide the pot and increment their stacks
+        else:
+          total_tie_players = len(nested_tie_players)
+          for player in nested_tie_players:
+            player.stack+=(self.pot/total_tie_players)
+          self.pot = 0
+
+    # test (delete this later)
+    for player in self.players:
+      print("Player {} [Stack: ${}]: {}{} {}{}".format(player.player_id, player.stack, player.hand.card1.value, player.hand.card1.suit[0], player.hand.card2.value, player.hand.card2.suit[0]))
 
   # helper function
   @staticmethod
@@ -869,7 +1284,7 @@ class Table:
                 kicker_weight = j.weight
 
             player.hand_rank = 7
-            return ["4 of a kind ({}'s) [{} kicker]".format(card.value, kicker.value)]
+            return ["4 of a kind ({}'s) {} kicker".format(card.value, kicker.value)]
             #return kicker
     
     # done
@@ -969,7 +1384,7 @@ class Table:
           pair_counter += 1
           if(pair_counter == 3):
             player.hand_rank = 3
-            return ["3 of a kind ({}'s)".format(card.value), self.find_high_cards(all_cards, 2, card.value)]
+            return ["3 of a kind {}'s".format(card.value), self.find_high_cards(all_cards, 2, card.value)]
             
 
     # check for 2 pair
@@ -1004,7 +1419,7 @@ class Table:
           if (card.value == val and card.value != pair1 and card.value != pair2):
             kicker = card
             player.hand_rank = 2
-            return ["Two Pair {}'s and {}'s".format(pair1, pair2), kicker]
+            return ["Two Pair {}'s and {}'s {} kicker".format(pair1, pair2, kicker.value)]
 
     # done
     # check for pair
@@ -1015,11 +1430,12 @@ class Table:
           pair_counter += 1
           if(pair_counter == 2):
             player.hand_rank = 1
-            return ["Pair of ({}'s)".format(card.value), self.find_high_cards(all_cards, 3, card.value)]
+            return ["Pair of {}'s".format(card.value), self.find_high_cards(all_cards, 3, card.value)]
 
     #done
     # default to high card
     high_cards = self.find_high_cards(all_cards, 5, '')
+    player.hand_rank = 0
     return ["High card {}".format(high_cards[0].value), high_cards]
 
 
