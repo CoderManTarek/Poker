@@ -444,27 +444,10 @@ class Client:
 
   # instantiate socket
   sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-  def sendMsg(self):
-    while True:
-      msg = input("")
+  def sendMsg(self, msg):
       self.sock.send(bytes(msg, 'utf-8'))
 
-  #instantiate thread
-  def __init__(self, address):
-    self.this_player = ''
-    self.table = None
-    self.deck = None
-    self.players = []
-    addressAndPort = address.split(':')
-    try:
-      self.sock.connect((addressAndPort[0], int(addressAndPort[1])))
-      iThread = threading.Thread(target=self.sendMsg)
-      iThread.daemon = True
-      iThread.start()
-    except:
-      print("attempt to connect to server was unsuccessful")
-      exit(0)
-
+  def receive_loop(self):
     while True:
       try:
         data = self.sock.recv(1024)
@@ -630,6 +613,90 @@ class Client:
           for player in self.table.players:
             if player == temp_player_id:
               player.status = "out"
+
+  def run_gui(self):
+    while True:
+      if self.gui_thread_check == True:
+        self.gui.mainloop()
+
+  def login(self, username, password):
+    msg = "login {} {}".format(username, password)
+    self.sendMsg(msg)
+
+  def create_login_view(self):
+    #log-in frame
+    login_frame = Frame(self.top_frame, width=400, height=600, bg = "#35654d")
+    login_frame.place(relx=0.5, rely=0.5, anchor="c")
+
+    lbframe_app_name = LabelFrame(login_frame, bg="#35654d", relief="groove")
+    lb_app_name = Label(lbframe_app_name, bg="#35654d", text="Poker App", font="Helvetica 32 bold")
+    lb_username = Label(login_frame, bg="#35654d", text="Username:", font="Helvetica 16 bold")
+    #ADD validation
+    entry_username = Entry(login_frame, width=20)
+    lb_password = Label(login_frame, bg="#35654d", text="Password:", font="Helvetica 16 bold")
+    entry_password = Entry(login_frame, width=20)
+    bttn_register = Button(login_frame, image=self.Images.register, borderwidth=0, bg="#35654d", activebackground="#35654d")
+    bttn_log_in = Button(login_frame, image=self.Images.log_in, borderwidth=0, bg="#35654d", activebackground="#35654d", command=lambda:self.login(entry_username.get(), entry_password.get()))
+    lb_error_alert = Label(login_frame, bg="#E69394", font="Helvetica 12 bold", fg="#8E282A")
+    
+    lbframe_app_name.grid(row=0, column=0, columnspan=2, pady=32)
+    lb_app_name.pack(anchor="c", padx=10, pady=10)
+    lb_username.grid(row=1, column=0, columnspan=2, pady=5)
+    entry_username.grid(row=2, column=0, columnspan=2, pady=5)
+    lb_password.grid(row=3, column=0, columnspan=2, pady=5)
+    entry_password.grid(row=4, column=0, columnspan=2, pady=5)
+    bttn_register.grid(row=5, column=0, padx=15, pady=15)
+    bttn_log_in.grid(row=5, column=1, padx=15, pady=15)
+
+  #instantiate thread
+  def __init__(self, address):
+     #GUI window
+    self.gui = Tk()
+    self.canvas = Canvas()
+    self.gui.title("Poker App")
+    self.gui.config(bg="#D3D3D3")
+    self.gui.geometry("1200x800")
+    self.gui.resizable(False, False)
+    self.gui.iconbitmap("img/app_icon.ico")
+    self.top_frame = Frame(self.gui, width=1200, height=800)
+    self.top_frame.pack()
+    self.top_frame.config(bg = "#35654d")
+     #initialize images
+    self.Images = Assets()
+    self.Images.register = PhotoImage(file="img/register.png")
+    self.Images.log_in = PhotoImage(file="img/log_in.png")
+    self.Images.join_table = PhotoImage(file="img/join_table.png")
+    self.Images.leave_table = PhotoImage(file="img/leave_table.png")
+    self.Images.buy_in = PhotoImage(file="img/buy_in.png")
+    self.Images.cash_out = PhotoImage(file="img/cash_out.png")
+    self.Images.chips = PhotoImage(file="img/chips.png")
+    self.Images.pot = PhotoImage(file="img/pot.png")
+    self.Images.card_back = PhotoImage(file="img/card_back.png")
+    self.Images.fold = PhotoImage(file="img/fold.png")
+    self.Images.check = PhotoImage(file="img/check.png")
+    self.Images.call = PhotoImage(file="img/call.png")
+    self.Images.bet = PhotoImage(file="img/bet.png")
+    self.Images.raise_img = PhotoImage(file="img/raise.png")
+    self.Images.reraise= PhotoImage(file="img/re-raise.png")
+    self.Images.card_images = initialize_card_images()
+    self.create_login_view()
+
+
+    self.this_player = ''
+    self.table = None
+    self.deck = None
+    self.players = []
+    addressAndPort = address.split(':')
+    try:
+      self.sock.connect((addressAndPort[0], int(addressAndPort[1])))
+      iThread = threading.Thread(target=self.receive_loop)
+      iThread.daemon = True
+      iThread.start()
+    except:
+      print("attempt to connect to server was unsuccessful")
+      exit(0)
+
+    self.gui.mainloop()
           
 
 class Card:
@@ -2299,11 +2366,68 @@ def gui():
 
   gui.mainloop()
 
+class GUI:
+  def __init__(self):
+     #GUI window
+    self.gui = Tk()
+    self.canvas = Canvas()
+    self.gui.title("Poker App")
+    self.gui.config(bg="#D3D3D3")
+    self.gui.geometry("1200x800")
+    self.gui.resizable(False, False)
+    self.gui.iconbitmap("img/app_icon.ico")
+    self.top_frame = Frame(self.gui, width=1200, height=800)
+    self.top_frame.pack()
+    self.top_frame.config(bg = "#35654d")
+     #initialize images
+    self.Images = Assets()
+    self.Images.register = PhotoImage(file="img/register.png")
+    self.Images.log_in = PhotoImage(file="img/log_in.png")
+    self.Images.join_table = PhotoImage(file="img/join_table.png")
+    self.Images.leave_table = PhotoImage(file="img/leave_table.png")
+    self.Images.buy_in = PhotoImage(file="img/buy_in.png")
+    self.Images.cash_out = PhotoImage(file="img/cash_out.png")
+    self.Images.chips = PhotoImage(file="img/chips.png")
+    self.Images.pot = PhotoImage(file="img/pot.png")
+    self.Images.card_back = PhotoImage(file="img/card_back.png")
+    self.Images.fold = PhotoImage(file="img/fold.png")
+    self.Images.check = PhotoImage(file="img/check.png")
+    self.Images.call = PhotoImage(file="img/call.png")
+    self.Images.bet = PhotoImage(file="img/bet.png")
+    self.Images.raise_img = PhotoImage(file="img/raise.png")
+    self.Images.reraise= PhotoImage(file="img/re-raise.png")
+    self.Images.card_images = initialize_card_images()
+
+  def create_login_view(self):
+    #log-in frame
+    login_frame = Frame(self.top_frame, width=400, height=600, bg = "#35654d")
+    login_frame.place(relx=0.5, rely=0.5, anchor="c")
+
+    lbframe_app_name = LabelFrame(login_frame, bg="#35654d", relief="groove")
+    lb_app_name = Label(lbframe_app_name, bg="#35654d", text="Poker App", font="Helvetica 32 bold")
+    lb_username = Label(login_frame, bg="#35654d", text="Username:", font="Helvetica 16 bold")
+    #ADD validation
+    entry_username = Entry(login_frame, width=20)
+    lb_password = Label(login_frame, bg="#35654d", text="Password:", font="Helvetica 16 bold")
+    entry_password = Entry(login_frame, width=20)
+    bttn_register = Button(login_frame, image=self.Images.register, borderwidth=0, bg="#35654d", activebackground="#35654d")
+    bttn_log_in = Button(login_frame, image=self.Images.log_in, borderwidth=0, bg="#35654d", activebackground="#35654d", command=lambda:check_login(entry_username.get(), entry_password.get(), self.top_frame, lb_error_alert, self.Images))
+    lb_error_alert = Label(login_frame, bg="#E69394", font="Helvetica 12 bold", fg="#8E282A")
+    
+    lbframe_app_name.grid(row=0, column=0, columnspan=2, pady=32)
+    lb_app_name.pack(anchor="c", padx=10, pady=10)
+    lb_username.grid(row=1, column=0, columnspan=2, pady=5)
+    entry_username.grid(row=2, column=0, columnspan=2, pady=5)
+    lb_password.grid(row=3, column=0, columnspan=2, pady=5)
+    entry_password.grid(row=4, column=0, columnspan=2, pady=5)
+    bttn_register.grid(row=5, column=0, padx=15, pady=15)
+    bttn_log_in.grid(row=5, column=1, padx=15, pady=15)
+
 def main():
   #instantiate server
   if (len(sys.argv)>1):
     client = Client(sys.argv[1])
-    #gui()
+    
   #instantiate client
   else:
     server = Server()
