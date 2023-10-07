@@ -1,0 +1,2 @@
+class Assets:
+  pass
