@@ -189,11 +189,11 @@ def create_table_view(top_frame, Images):
   lbframe_community_card4.grid(row=0, column=3)
   lbframe_community_card5.grid(row=0, column=4)
 
-  img_community_card1 = Label(lbframe_community_card1, bg="#35654d", image=Images.card_images["d3"])
-  img_community_card2 = Label(lbframe_community_card2, bg="#35654d", image=Images.card_images["h13"])
-  img_community_card3 = Label(lbframe_community_card3, bg="#35654d", image=Images.card_images["s1"])
-  img_community_card4 = Label(lbframe_community_card4, bg="#35654d", image=Images.card_images["s6"])
-  img_community_card5 = Label(lbframe_community_card5, bg="#35654d", image=Images.card_images["c11"])
+  img_community_card1 = Label(lbframe_community_card1, bg="#35654d", image=Images.card_images["3d"])
+  img_community_card2 = Label(lbframe_community_card2, bg="#35654d", image=Images.card_images["13h"])
+  img_community_card3 = Label(lbframe_community_card3, bg="#35654d", image=Images.card_images["1s"])
+  img_community_card4 = Label(lbframe_community_card4, bg="#35654d", image=Images.card_images["6s"])
+  img_community_card5 = Label(lbframe_community_card5, bg="#35654d", image=Images.card_images["11c"])
 
   img_community_card1.pack()
   img_community_card2.pack()

@@ -210,18 +210,18 @@ class Server:
                 break
 
         #login
-        for users in self.usernames_passwords_bankrolls:
+        for user in self.usernames_passwords_bankrolls:
           if(checklogin==True or tokenschecker==False):
             break
-          if(tokens[1] == users[0]):
-            if(tokens[2] == users[1]):
+          if(tokens[1] == user[0]):
+            if(tokens[2] == user[1]):
               self.activePlayersAndAddresses.append((tokens[1], str(a[0]), a[1]))
               
               # find client that sent this packet and respond 
               for connection in self.connections:
                 if(connection.getpeername()[0] == str(a[0])):
                   if(connection.getpeername()[1] == a[1]):
-                      connection.send(bytes("login confirmed", 'utf-8'))
+                      connection.send(bytes("login success {} {}".format(user[0], user[2]), 'utf-8'))
                       print(tokens[1]+" login")
                       loginchecker = True
                       break
@@ -234,7 +234,7 @@ class Server:
           for connection in self.connections:
             if(connection.getpeername()[0] == str(a[0])):
               if(connection.getpeername()[1] == a[1]):
-                  connection.send(bytes("Denied. User name or password incorrect.", 'utf-8'))
+                  connection.send(bytes("login denied", 'utf-8'))
 
 
       #############if we are sending to all users#############
