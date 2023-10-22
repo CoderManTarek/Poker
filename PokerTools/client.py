@@ -316,11 +316,25 @@ class Client:
         self.img_community_card1.config(image=self.Images.card_images[card1])
         self.img_community_card2.config(image=self.Images.card_images[card2])
         self.img_community_card3.config(image=self.Images.card_images[card3])
+
+      if tokens[0] == "Turn:":
+        self.table_bet_status = 0
+        card4 = self.check_card_weight(tokens[4]) 
+        self.img_community_card4.config(image=self.Images.card_images[card4])
+
+      if tokens[0] == "River:":
+        self.table_bet_status = 0
+        card5 = self.check_card_weight(tokens[5]) 
+        self.img_community_card5.config(image=self.Images.card_images[card5])
         
   @staticmethod
   def check_card_weight(card):
-    value = card[0]
-    suit = card[1]
+    if len(card) == 2:
+      value = card[0]
+      suit = card[1]
+    else:
+      value = card[0]+card[1]
+      suit = card[2]
     try:
       # deal with numerical card values
       k = int(value)
