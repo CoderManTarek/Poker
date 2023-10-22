@@ -66,7 +66,13 @@ class Client:
     self.bttn_action2 = None
     self.bttn_action3 = None
     self.bttn_action4 = None
-
+    self.entry_bet_amount = None
+    self.lb_pot = None
+    self.img_community_card1 = None
+    self.img_community_card2 = None
+    self.img_community_card3 = None
+    self.img_community_card4 = None
+    self.img_community_card5 = None
     self.player_gui_list = []
     self.this_player = ''
     self.table = None
@@ -127,10 +133,16 @@ class Client:
           if(int(tokens[1]) == player.seat_number):       
             # is that player on this client
             if(player.player_id == self.this_player):
-              # This player has action  
-              self.bttn_action1.config(state=NORMAL)
-              self.bttn_action2.config(state=NORMAL)
-              self.bttn_action3.config(state=NORMAL)
+              # This player has action
+              if self.table_bet_status == 0:  
+                self.bttn_action1.config(image=self.Images.fold, state=NORMAL, command=lambda:self.decision_fold())
+                self.bttn_action2.config(image=self.Images.check, state=NORMAL, command=lambda:self.decision_check())
+                self.bttn_action3.config(image=self.Images.bet, state=NORMAL, command=lambda:self.decision_bet(self.entry_bet_amount.get()))
+              if self.table_bet_status == 1:
+                self.bttn_action1.config(image=self.Images.fold, state=NORMAL, command=lambda:self.decision_fold())
+                self.bttn_action2.config(image=self.Images.call, state=NORMAL, command=lambda:self.decision_call())
+                self.bttn_action3.config(image=self.Images.raise_img, state=NORMAL, command=lambda:self.decision_bet(self.entry_bet_amount.get()))
+
               print("you have the action {}, Stack: {}".format(player.player_id, player.stack))
 
 
@@ -257,14 +269,20 @@ class Client:
         choice = tokens[3]
 
         if choice == 'bet':
+          self.table_bet_status = 1
           # convert amount to int
           amount = int(tokens[4])
           # increment pot
           self.table.pot += amount
+          self.lb_pot.config(text="${}".format(self.table.pot))
           for player in self.table.players:
             if player.player_id == temp_player_id:
               player.stack -= amount
               player.status = "in (money not owed)"
+              for player_gui in self.player_gui_list:
+                if player_gui.player_name == temp_player_id:
+                  player_gui.lb_player_stack.config(text="${}".format(player.stack))
+                  player_gui.lb_player_action.config(text="Bet ${}".format(amount))
 
           self.table.print_all_players()
 
@@ -289,6 +307,34 @@ class Client:
           for player in self.table.players:
             if player == temp_player_id:
               player.status = "out"
+
+      if tokens[0] == "Flop:":
+        self.table_bet_status = 0
+        card1 = self.check_card_weight(tokens[1])
+        card2 = self.check_card_weight(tokens[2])
+        card3 = self.check_card_weight(tokens[3])
+        self.img_community_card1.config(image=self.Images.card_images[card1])
+        self.img_community_card2.config(image=self.Images.card_images[card2])
+        self.img_community_card3.config(image=self.Images.card_images[card3])
+        
+  @staticmethod
+  def check_card_weight(card):
+    value = card[0]
+    suit = card[1]
+    try:
+      # deal with numerical card values
+      k = int(value)
+      return value+suit
+    except:
+      #deal with face cards
+      face_card_weights = {
+        'J':"11",
+        'Q':"12",
+        'K':"13",
+        'A':"14"
+      }
+      value = face_card_weights[value]
+      return value+suit
 
   def run_gui(self):
     while True:
@@ -505,10 +551,10 @@ class Client:
     table_frame.place(relx=0.5, rely=0.5, anchor="c")
 
     lb_img_pot = Label(table_frame, bg="#35654d", image=self.Images.pot)
-    lb_pot = Label(table_frame, bg="#35654d", text="$1000", font="Helvetica 16 bold")
+    self.lb_pot = Label(table_frame, bg="#35654d", text="$0", font="Helvetica 16 bold")
 
     lb_img_pot.place(x=400, y=80, anchor="c")
-    lb_pot.place(x=400, y=120, anchor="c")
+    self.lb_pot.place(x=400, y=120, anchor="c")
 
     #Display community cards
     community_cards_frame = Frame(table_frame, bg="#35654d", width=300, height=72)
@@ -526,17 +572,17 @@ class Client:
     lbframe_community_card4.grid(row=0, column=3)
     lbframe_community_card5.grid(row=0, column=4)
 
-    img_community_card1 = Label(lbframe_community_card1, bg="#35654d", image=self.Images.card_images["3d"])
-    img_community_card2 = Label(lbframe_community_card2, bg="#35654d", image=self.Images.card_images["13h"])
-    img_community_card3 = Label(lbframe_community_card3, bg="#35654d", image=self.Images.card_images["14s"])
-    img_community_card4 = Label(lbframe_community_card4, bg="#35654d", image=self.Images.card_images["6s"])
-    img_community_card5 = Label(lbframe_community_card5, bg="#35654d", image=self.Images.card_images["11c"])
+    self.img_community_card1 = Label(lbframe_community_card1, bg="#35654d", image=self.Images.card_back)
+    self.img_community_card2 = Label(lbframe_community_card2, bg="#35654d", image=self.Images.card_back)
+    self.img_community_card3 = Label(lbframe_community_card3, bg="#35654d", image=self.Images.card_back)
+    self.img_community_card4 = Label(lbframe_community_card4, bg="#35654d", image=self.Images.card_back)
+    self.img_community_card5 = Label(lbframe_community_card5, bg="#35654d", image=self.Images.card_back)
 
-    img_community_card1.pack()
-    img_community_card2.pack()
-    img_community_card3.pack()
-    img_community_card4.pack()
-    img_community_card5.pack()
+    self.img_community_card1.pack()
+    self.img_community_card2.pack()
+    self.img_community_card3.pack()
+    self.img_community_card4.pack()
+    self.img_community_card5.pack()
 
     #Coordinates of each player frame
     coord_list = [(548, 458, 1), (268, 438, 2), (48, 258, 3), (190, 40, 4), (428, 6, 5), (668, 6, 6), (906, 40, 7), (1048, 258, 8), (828, 438, 9)] 
@@ -576,12 +622,12 @@ class Client:
     self.bttn_action3 = Button(action_frame, image=action_3, borderwidth=0, state=DISABLED)
     # Bet/Raise/Re-raise amount Entry box
     #ADD validation, dynamic min/max values
-    entry_bet_amount = Entry(action_frame, width=6)
-    bet_min = 2
+    self.entry_bet_amount = Entry(action_frame, width=6)
+    bet_min = 1
     bet_max = 200
-    entry_bet_amount.insert(0, str(bet_min))
-    bet_range = "$" + str(bet_min) + "-" + "$" + str(bet_max)
-    lb_bet_range = Label(action_frame, text=bet_range, font="Helvetica 10 bold")
+    self.entry_bet_amount.insert(0, str(bet_min))
+    # bet_range = "$" + str(bet_min) + "-" + "$" + str(bet_max)
+    # lb_bet_range = Label(action_frame, text=bet_range, font="Helvetica 10 bold")
 
     player_is_seated = True
     #if player is seated: show cash out button
@@ -596,10 +642,35 @@ class Client:
     self.bttn_action2.place(x=200, y=25, anchor="n")
     self.bttn_action3.place(x=300, y=25, anchor="n")
     bttn_action4.place(x=200, y=171, anchor="s")
-    entry_bet_amount.place(x=300, y=70, anchor="n")
-    lb_bet_range.place(x=300, y= 100, anchor="n")
+    self.entry_bet_amount.place(x=300, y=70, anchor="n")
+    # lb_bet_range.place(x=300, y= 100, anchor="n")
 
     bttn_start_game = Button(chat_frame, image=self.Images.start_game, borderwidth=0, command=lambda:self.start_game())
     bttn_start_game.pack()
+
   def start_game(self):
-      self.sendMsg("start")
+    self.sendMsg("start")
+
+  def decision_fold(self):
+    self.sendMsg("decision fold")
+    self.bttn_action1.config(state=DISABLED)
+    self.bttn_action2.config(state=DISABLED)
+    self.bttn_action3.config(state=DISABLED)
+
+  def decision_check(self):
+    self.sendMsg("decision check")
+    self.bttn_action1.config(state=DISABLED)
+    self.bttn_action2.config(state=DISABLED)
+    self.bttn_action3.config(state=DISABLED)
+
+  def decision_bet(self, bet_amount):
+    self.sendMsg("decision bet {}".format(bet_amount))
+    self.bttn_action1.config(state=DISABLED)
+    self.bttn_action2.config(state=DISABLED)
+    self.bttn_action3.config(state=DISABLED)
+  
+  def decision_call(self):
+    self.sendMsg("decision call")
+    self.bttn_action1.config(state=DISABLED)
+    self.bttn_action2.config(state=DISABLED)
+    self.bttn_action3.config(state=DISABLED)

@@ -37,8 +37,8 @@ class PlayerGUI:
     # if player_is_seated == True:
     self.lb_img_card_one = Label(card_one_frame, bg="#505b62", image=img_card_back)
     self.lb_img_card_two = Label(card_two_frame, bg="#505b62", image=img_card_back)
-    self.lb_player_name = Label(player_frame, bg="#505b62", text="Test Player Name", font="Helvetica 10 bold")
-    self.lb_player_stack = Label(player_frame, bg="#505b62", text="$200", font="Helvetica 10 bold")
+    self.lb_player_name = Label(player_frame, bg="#505b62", text="Empty", font="Helvetica 10 bold")
+    self.lb_player_stack = Label(player_frame, bg="#505b62", text="$", font="Helvetica 10 bold")
     self.lb_player_action = Label(player_frame, bg="#505b62", text="Action", font="Helvetica 10 bold")
 
     self.lb_player_name.grid(row=1, column=0, columnspan=2)
