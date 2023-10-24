@@ -59,6 +59,7 @@ class Client:
     self.Images.reraise= PhotoImage(file="img/re-raise.png")
     self.Images.start_game = PhotoImage(file="img/start_game.png")
     self.Images.card_images = initialize_card_images()
+
     self.login_frame = self.create_login_view()
     self.is_on_table = False
     self.table_bet_status = 0
@@ -68,6 +69,7 @@ class Client:
     self.bttn_action4 = None
     self.entry_bet_amount = None
     self.lb_pot = None
+    self.bttn_start_game = None
     self.img_community_card1 = None
     self.img_community_card2 = None
     self.img_community_card3 = None
@@ -148,6 +150,8 @@ class Client:
 
       # if cards have been dealt to players
       if(tokens[0] == "Dealt:"):
+        #Hide Start Game button
+        self.bttn_start_game.place_forget()
         #load cards in player objects within client
         for player in self.table.players:
           if(int(tokens[1]) == player.seat_number):
@@ -678,8 +682,8 @@ class Client:
     self.entry_bet_amount.place(x=300, y=70, anchor="n")
     # lb_bet_range.place(x=300, y= 100, anchor="n")
 
-    bttn_start_game = Button(chat_frame, image=self.Images.start_game, borderwidth=0, command=lambda:self.start_game())
-    bttn_start_game.pack()
+    self.bttn_start_game = Button(room_frame, background="#dad7cd", image=self.Images.start_game, borderwidth=0, command=lambda:self.start_game())
+    self.bttn_start_game.place(relx=1, rely=1, anchor="se")
 
   def start_game(self):
     self.sendMsg("start")
