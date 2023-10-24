@@ -289,6 +289,7 @@ class Client:
         if choice == 'call':
           amount = int(tokens[4])
           self.table.pot += amount
+          self.lb_pot.config(text="${}".format(self.table.pot))
           for player in self.table.players:
             if player.player_id == temp_player_id:
               player.stack -= amount
