@@ -12,7 +12,7 @@ def return_card_frame(parent, color):
   return card_frame
 
 class PlayerGUI:
-  def __init__(self, room_frame, x, y, img_chips, img_card_back, img_buy_in, seat_num, player_name, player_stack):
+  def __init__(self, room_frame, x, y, img_chips, img_card_back, img_buy_in, position, player_name, player_stack):
     #frame for each player
     player_frame = Frame(room_frame, bg="#dad7cd", width=104, height=140)
     player_frame.place(x=x, y=y)
@@ -26,7 +26,8 @@ class PlayerGUI:
     lb_img_chips = Label(player_frame, bg="#dad7cd", image=img_chips)
     lb_img_chips.grid(row=2, column=0)
 
-    self.seat_num = seat_num
+    self.position = position
+    self.seat_num = 0
     self.player_name = player_name
     self.player_stack = player_stack
 
@@ -61,8 +62,8 @@ class PlayerGUI:
     #   bttn_buy_in.grid(row=1, column=0, columnspan=2)
     #   entry_buy_in.grid(row=2, column=1)
     #   lb_buy_in_range.grid(row=3, column=1)
-    lb_player_seat = Label(player_frame, bg="#dad7cd", text="Seat {}".format(seat_num))
-    lb_player_seat.grid(row=3, column=0)
+    self.lb_player_seat = Label(player_frame, bg="#dad7cd", text="Seat {}".format(position))
+    self.lb_player_seat.grid(row=3, column=0)
 
   def update_player_name(self, new_name):
     self.player_name = new_name
@@ -71,6 +72,10 @@ class PlayerGUI:
   def update_player_stack(self, new_stack):
     self.player_stack = new_stack
     self.lb_player_stack.config(text = "${}".format(new_stack))
+
+  def update_player_seat_num(self, seat_num):
+    self.seat_num = seat_num
+    self.lb_player_seat.config(text="Seat {}".format(seat_num))
 
   def update_img_card(self, img_card1, img_card2):
     self.lb_img_card_one.config(image = img_card1)

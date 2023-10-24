@@ -247,7 +247,25 @@ class Client:
             continue
         if self.is_on_table == False:
           self.create_table_view()
+          position_difference = 0
+          #Seat this player
+          for player_gui in self.player_gui_list:
+            if player_gui.position == 1:
+              for player in self.table.players:
+                if player.player_id == self.this_player:
+                  player_gui.update_player_name(player.player_id)
+                  player_gui.update_player_stack(player.stack)
+                  player_gui.update_player_seat_num(player.seat_number)
+                  position_difference = player.seat_number-1
           self.is_on_table = True
+          #Number other seats accordingly
+          for player_gui in self.player_gui_list:
+            if player_gui.position != 1:
+              new_seat_num = player_gui.position + position_difference
+              if new_seat_num > 9:
+                new_seat_num = new_seat_num-9
+              player_gui.update_player_seat_num(new_seat_num)
+
         # update GUI players here
         for player in self.table.players:
           player_is_seated = False
@@ -603,8 +621,8 @@ class Client:
     coord_list = [(548, 458, 1), (268, 438, 2), (48, 258, 3), (190, 40, 4), (428, 6, 5), (668, 6, 6), (906, 40, 7), (1048, 258, 8), (828, 438, 9)] 
 
     #Loop to create frame for each player
-    for x, y, z in coord_list:
-      self.player_gui_list.append(PlayerGUI(room_frame, x, y, self.Images.chips, self.Images.card_back, self.Images.buy_in, z, "Empty Seat", 0))
+    for x, y, position in coord_list:
+      self.player_gui_list.append(PlayerGUI(room_frame, x, y, self.Images.chips, self.Images.card_back, self.Images.buy_in, position, "Empty Seat", 0))
     
     #Chat frame
     chat_frame = Frame(self.top_frame, bg="#ffffff", width=796, height=196)
