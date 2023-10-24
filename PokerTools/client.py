@@ -477,7 +477,7 @@ class Client:
   def return_card_frame(self, parent, color):
     if color == "gray":
       #room frame background color (gray)
-      bg = "#505b62"
+      bg = "#dad7cd"
     else:
       #table frame background color (felt green)
       bg = "#35654d"
@@ -557,11 +557,11 @@ class Client:
     #window widgets
     self.top_frame.config(bg="")
     #room frame
-    room_frame = Frame(self.top_frame, bg="#505b62", width=1200, height=600)
+    room_frame = Frame(self.top_frame, bg="#dad7cd", width=1200, height=600)
     room_frame.place(x=0, y=0, anchor="nw")
 
     #table frame
-    table_frame = Canvas(room_frame, bg="#505b62", width=800, height=300, highlightthickness=0)
+    table_frame = Canvas(room_frame, bg="#dad7cd", width=800, height=300, highlightthickness=0)
     table_frame.create_oval(0, 0, 800, 300, outline = "#65354d", fill = "#35654d",width = 2)
     table_frame.place(relx=0.5, rely=0.5, anchor="c")
 
