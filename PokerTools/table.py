@@ -779,13 +779,14 @@ class Table:
     self.send_action()
   
   def flop(self):
+    self.deck.cards.remove(self.deck.cards[0]) # burn
     self.community_cards.append(self.deck.cards[0])
     self.community_cards.append(self.deck.cards[1])
     self.community_cards.append(self.deck.cards[2])
 
     self.deck.cards.remove(self.deck.cards[0])
-    self.deck.cards.remove(self.deck.cards[1])
-    self.deck.cards.remove(self.deck.cards[2])
+    self.deck.cards.remove(self.deck.cards[0])
+    self.deck.cards.remove(self.deck.cards[0])
 
     server_response = "Flop: {}{} {}{} {}{}".format(self.community_cards[0].value, self.community_cards[0].suit[0], self.community_cards[1].value, self.community_cards[1].suit[0], self.community_cards[2].value, self.community_cards[2].suit[0])
 
@@ -805,6 +806,7 @@ class Table:
   def turn(self):
     self.reset_player_round_amounts()
 
+    self.deck.cards.remove(self.deck.cards[0]) # burn
     self.community_cards.append(self.deck.cards[0])
     self.deck.cards.remove(self.deck.cards[0])
 
@@ -827,6 +829,7 @@ class Table:
     self.reset_player_round_amounts()
     #self.print_table()
 
+    self.deck.cards.remove(self.deck.cards[0]) # burn
     self.community_cards.append(self.deck.cards[0])
     self.deck.cards.remove(self.deck.cards[0])
 
@@ -850,9 +853,9 @@ class Table:
     self.deck.shuffle()
     seats_and_hands = []
     for player in self.players:
-      player.hand = Hand(self.deck.cards[0], self.deck.cards[len(self.players)])
+      player.hand = Hand(self.deck.cards[0], self.deck.cards[1])
       self.deck.cards.remove(self.deck.cards[0])
-      self.deck.cards.remove(self.deck.cards[len(self.players)-1])
+      self.deck.cards.remove(self.deck.cards[0])
       seats_and_hands.append((player.seat_number, Hand.__str__(player.hand)))
     for connection in self.connections:
       for i in seats_and_hands:
